@@ -1,0 +1,20 @@
+MODULE
+- When there is a valid go.mod file at the root the progject, the project becomes a module.
+- When using go get to download dependencies into the project, the exact version of the downloaded dependecies are recorded in go.mod.
+	This ensures the project's reproducibility when building to binary or running.
+- When you run or build the project, Go uses the exact versions of dependencies listed in go.mod.
+	If any dependencies aren't in your local machine, Go will automatically download them, along with any recursive dependencies (dependencies of the dependencies?).
+- The go.mod file also defines the module path, which is the identifier for the module.
+	The module path is also the root of the import path for any non-standard packages.
+
+API VERSIONING
+APIs in real-world businesses often need to change their functionality, sometimes in backwards-incompatible way.
+To avoid problems for clients, it's a good idea to implement some form of API versioning. That way, clients can choose their suitable version.
+This service versions API by prefixing all endpoints with "/v*" like "/v1/healthcheck".
+
+HTTP METHOD
+GET: for actions that retrieve resource only and don't change the state of the application or the data.
+POST: for non-idempotent actions that modify state. In context of REST API, POST is generally used for creating a new resource.
+PUT: for idempotent actions that modify state of a resource at a specific URL. In context of REST API, PUT is generally used for updating or replacing an existing resource.
+PATCH: for actions that partially update a resource at a specific URL. The action can be either imdempotent or non-idempotent.
+DELETE: for actions that delete a resource at specific URL.
