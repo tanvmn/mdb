@@ -1,3 +1,19 @@
+----------------------------------------------------------------------------------------------------------------
+
+WEB APPLICATION STRUCTURE
+
+- A server, in a loop, listens for incoming requests from clients to accept connections.
+- When a connection is accepted, the request is routed the corresponding registered handler based on the request's path.
+- After processing the request, the server responses to the client.
+
+So a web application needs:
+- a multiplexer to register handlers with request's path patterns and maybe request's methods.
+	This multiplexer can also route requests based on the paths and what have been registered.
+- something to announce an ip address (host:port) on the local network.
+- a server to listen for requests on an ip address, to accept connections, and to response to clients.
+
+----------------------------------------------------------------------------------------------------------------
+
 MODULE
 - When there is a valid go.mod file at the root the progject, the project becomes a module.
 - When using go get to download dependencies into the project, the exact version of the downloaded dependecies are recorded in go.mod.
