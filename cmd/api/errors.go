@@ -27,3 +27,8 @@ func (a *app) serverErr(w http.ResponseWriter, r *http.Request, err error) {
 	a.logErr(r, err)
 	a.err(w, r, http.StatusInternalServerError, "server error")
 }
+
+// notFound calls a.err with status 404 and "resource not found" as message.
+func (a *app) notFound(w http.ResponseWriter, r *http.Request) {
+	a.err(w, r, http.StatusNotFound, "resource not found")
+}

@@ -3,15 +3,31 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/tanvmn/mdb/internal/data"
 )
+
+// movie calls a.ok with wrap{"movie":m} as data.
+func (a *app) movie(w http.ResponseWriter, r *http.Request, m *data.Movie) {
+	a.ok(w, r, wrap{"movie": m})
+}
 
 func (a *app) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := id(r)
 	if err != nil {
-		http.NotFound(w, r)
+		a.notFound(w, r)
 		return
 	}
-	fmt.Fprintf(w, "movie with ID %v", id)
+	m := &data.Movie{
+		ID:        id,
+		CreatedAt: time.Now(),
+		Title:     "Casablanca",
+		Runtime:   102,
+		Genres:    []string{"drama", "romance", "war"},
+		Version:   1,
+	}
+	a.movie(w, r, m)
 }
 
 func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
