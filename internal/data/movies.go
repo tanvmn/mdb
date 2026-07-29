@@ -7,7 +7,7 @@ type Movie struct {
 	CreatedAt time.Time `json:"-"`
 	Title     string    `json:"title"`
 	Year      int32     `json:"year,omitzero"`
-	Runtime   Runtime   `json:"runtime,omitzero"` // don't embed Runtime, cause (*)Movie will satisfies Marshaler, then JSON of (*)Movie will be JSON of (*)Runtime.
+	Runtime   Runtime   `json:"runtime,omitzero"` // don't embed Runtime, cause (*)Movie will satisfies json.Marshaler, then JSON of (*)Movie will be JSON of (*)Runtime.
 	Genres    []string  `json:"genres,omitzero"`
 	Version   int32     `json:"version"`
 }
