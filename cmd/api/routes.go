@@ -9,5 +9,5 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("POST /v1/movies", a.postMovieHandler)
 	mux.HandleFunc("GET /v1/movies/{id}", a.getMovieHandler)
 
-	return mux
+	return chain([]middleware{a.recoverPanic, a.logRequest}, mux)
 }

@@ -3,12 +3,11 @@
 WEB APPLICATION STRUCTURE
 
 - A server, in a loop, listens for incoming requests from clients to accept connections.
-- When a connection is accepted, the request is routed the corresponding registered handler based on the request's path.
+- When a connection is accepted, the request is routed to the corresponding registered handler based on the request's path.
 - After processing the request, the server responses to the client.
 
 So a web application needs:
 - a multiplexer to register handlers with request's path patterns and maybe request's methods.
-	This multiplexer can also route requests based on the paths and what have been registered.
 - something to announce an ip address (host:port) on the local network.
 - a server to listen for requests on an ip address, to accept connections, and to response to clients.
 
@@ -34,3 +33,37 @@ POST: for non-idempotent actions that modify state. In context of REST API, POST
 PUT: for idempotent actions that modify state of a resource at a specific URL. In context of REST API, PUT is generally used for updating or replacing an existing resource.
 PATCH: for actions that partially update a resource at a specific URL. The action can be either imdempotent or non-idempotent.
 DELETE: for actions that delete a resource at specific URL.
+
+----------------------------------------------------------------------------------------------------------------
+
+JSON ENCODING IN GO
+
+- chan, func, complex* values cannot be encoded into JSON. If try, json.UnsupportedTypeError will be returned.
+- for any pointer values, the values pointed to will be encoded.
+- time.Time value will be encoded to JSON string in RFC3339 format.
+- []byte value will be encoded to base64-encoded JSON string.
+
+JSON struct tag directives:
+- "-": don't encode.
+- "omitzero": don't encode field that has its type's zero value.
+- "omitempty":
+	. don't encode field that has non nil value but len is zero.
+	. won't omit struct (including time.Time) whose all fields are zero or empty values.
+	. won't omit array even all element values are zero or empty.
+	. omits empty or zero maps and slices.
+	. for now, use if need to omit empty slices and maps.
+- "string": encode numerics and bool (or pointers to them) to string.
+
+----------------------------------------------------------------------------------------------------------------
+
+SYSTEM GENERATED ERROR RESPONSE
+
+http.Server can automatically serves plain-text when a request:
+- specifies supported HTTP version.
+- sends HTTP to HTTPS server.
+- has a missing or invalid Host header or has multiple Host header.
+- has an empty Content-Length header.
+- has unsupported an Transfer-Endcoding header.
+- has size that exceeds MaxHeaderBytes setting.
+
+----------------------------------------------------------------------------------------------------------------
