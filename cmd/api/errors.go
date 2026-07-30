@@ -32,3 +32,8 @@ func (a *app) serverErr(w http.ResponseWriter, r *http.Request, err error) {
 func (a *app) notFound(w http.ResponseWriter, r *http.Request) {
 	a.err(w, r, http.StatusNotFound, "resource not found")
 }
+
+// badRequest calls a.json with status 200.
+func (a *app) badRequest(w http.ResponseWriter, r *http.Request, err error) {
+	a.err(w, r, http.StatusBadRequest, err.Error())
+}

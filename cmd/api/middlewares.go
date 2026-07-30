@@ -29,6 +29,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
+				// this triggers http.Server to close the conn after responsing.
 				w.Header().Set("Connection", "close")
 				a.serverErr(w, r, fmt.Errorf("%v", err))
 				debug.PrintStack()
