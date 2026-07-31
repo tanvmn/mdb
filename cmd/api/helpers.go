@@ -47,6 +47,7 @@ func (a *app) ok(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusOK, data)
 }
 
+// decodeJSON decodes 1 single JSON value in r.Body into value pointed to by dst.
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxJSONSize)
 	dec := json.NewDecoder(r.Body)
@@ -54,18 +55,17 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 
 	err := dec.Decode(dst)
 	if err != nil {
-		var se *json.SyntaxError
-		var ute *json.UnmarshalTypeError
-		var iue *json.InvalidUnmarshalError
-		var mbe *http.MaxBytesError
+		se, malformed := errors.AsType[*json.SyntaxError](err)
+		ute, wrongType := errors.AsType[*json.UnmarshalTypeError](err)
+		_, invalidDest := errors.AsType[*json.InvalidUnmarshalError](err)
+		mbe, oversized := errors.AsType[*http.MaxBytesError](err)
 
 		switch {
-		case errors.As(err, &se):
+		case malformed:
 			return fmt.Errorf("JSON is malformed at byte number %v", se.Offset)
-		// this happens in some syntax error cases.
-		case errors.Is(err, io.ErrUnexpectedEOF):
+		case errors.Is(err, io.ErrUnexpectedEOF): // this happens in some malformed cases.
 			return errors.New("JSON is malformed")
-		case errors.As(err, &ute):
+		case wrongType:
 			if ute.Field != "" {
 				return fmt.Errorf("wrong JSON type for value of %q", ute.Field)
 			}
@@ -75,11 +75,11 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 		case strings.HasPrefix(err.Error(), "json: unknown field"):
 			k := strings.TrimPrefix(err.Error(), "json: unknown field ")
 			return fmt.Errorf("JSON contains unknown key %v", k)
-		case errors.As(err, &mbe):
+		case oversized:
 			return fmt.Errorf("body must not be larger than %v bytes", mbe.Limit)
 		case errors.Is(err, data.ErrInvalidRuntimeFormat):
 			return errors.New(strings.TrimPrefix(err.Error(), "data: "))
-		case errors.As(err, &iue):
+		case invalidDest:
 			// this is developer's error, so panic instead of returning error.
 			panic(fmt.Sprintf("decodeJSON: decode destination is not a non-nil pointer: %s", err)) // err instead of iue cause iue is only a node in err's tree.
 		default:
