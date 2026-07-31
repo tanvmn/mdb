@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/tanvmn/mdb/internal/data"
 )
 
 const maxJSONSize = 1_048_576 // bytes
@@ -75,14 +77,15 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 			return fmt.Errorf("JSON contains unknown key %v", k)
 		case errors.As(err, &mbe):
 			return fmt.Errorf("body must not be larger than %v bytes", mbe.Limit)
+		case errors.Is(err, data.ErrInvalidRuntimeFormat):
+			return errors.New(strings.TrimPrefix(err.Error(), "data: "))
 		case errors.As(err, &iue):
 			// this is developer's error, so panic instead of returning error.
-			panic(fmt.Errorf("decodeJSON: decode destination is not a non-nil pointer: %w", err)) // err instead of iue cause iue is only node in err's tree.
+			panic(fmt.Sprintf("decodeJSON: decode destination is not a non-nil pointer: %s", err)) // err instead of iue cause iue is only a node in err's tree.
 		default:
 			return err
 		}
 	}
-
 	if err = dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return errors.New("body must only contain a single JSON value")
 	}
