@@ -1,6 +1,13 @@
 package data
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/tanvmn/mdb/internal/validator"
+)
+
+const MinMovieYear = 1888
 
 type Movie struct {
 	ID        int64     `json:"id"`
@@ -10,4 +17,23 @@ type Movie struct {
 	Runtime   Runtime   `json:"runtime,omitzero"` // don't embed Runtime, cause (*)Movie will satisfies json.Marshaler, then JSON of (*)Movie will be JSON of (*)Runtime.
 	Genres    []string  `json:"genres,omitzero"`
 	Version   int32     `json:"version"`
+}
+
+func ValidateMovie(v *validator.Validator, m *Movie) {
+	titleLen := len(m.Title)
+	// v.Validate(m.Title != "", "title", "must be provided")
+	v.Validate(titleLen > 0, "title", "must be longer than 1 byte")
+	v.Validate(titleLen <= 500, "title", "must not be longer than 500 bytes")
+
+	// v.Validate(m.Year != 0, "year", "must be provided")
+	v.Validate(m.Year >= MinMovieYear, "year", fmt.Sprintf("must not be before %v", MinMovieYear))
+	v.Validate(m.Year <= int32(time.Now().Year()), "year", "must not be in the future")
+
+	v.Validate(m.Runtime > 0, "runtime", "must have a positive integer")
+
+	genresCount := len(m.Genres)
+	v.Validate(m.Genres != nil, "genres", "must be provided")
+	v.Validate(genresCount >= 1, "genres", "must have at least 1")
+	v.Validate(genresCount <= 5, "genres", "must not have more than 5")
+	v.Validate(validator.Unique(m.Genres), "genres", "must not have duplicates")
 }

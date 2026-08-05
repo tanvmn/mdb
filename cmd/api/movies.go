@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/tanvmn/mdb/internal/data"
+	"github.com/tanvmn/mdb/internal/validator"
 )
 
 // movie calls a.ok with wrap{"movie":m} as data.
@@ -40,5 +41,18 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		a.badRequest(w, r, err)
 		return
 	}
-	a.ok(w, r, input)
+
+	m := &data.Movie{
+		Title:   input.Title,
+		Year:    input.Year,
+		Runtime: input.Runtime,
+		Genres:  input.Genres,
+	}
+	v := validator.New()
+	if data.ValidateMovie(v, m); !v.Valid() {
+		a.unprocessableEntity(w, r, v.Errors)
+		return
+	}
+
+	a.movie(w, r, m)
 }

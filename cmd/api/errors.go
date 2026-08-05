@@ -33,7 +33,12 @@ func (a *app) notFound(w http.ResponseWriter, r *http.Request) {
 	a.err(w, r, http.StatusNotFound, "resource not found")
 }
 
-// badRequest calls a.json with status 200.
+// badRequest calls a.err with status 400 and err.Error() as message.
 func (a *app) badRequest(w http.ResponseWriter, r *http.Request, err error) {
 	a.err(w, r, http.StatusBadRequest, err.Error())
+}
+
+// unprocessableEntity calls a.json with status 422.
+func (a *app) unprocessableEntity(w http.ResponseWriter, r *http.Request, message any) {
+	a.err(w, r, http.StatusUnprocessableEntity, message)
 }

@@ -65,7 +65,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 			return fmt.Errorf("JSON is malformed at byte number %v", se.Offset)
 		case errors.Is(err, io.ErrUnexpectedEOF): // this happens in some malform cases.
 			return errors.New("JSON is malformed")
-		case wrongType:
+		case wrongType: // this could happen if JSON number value overflows or underflows Go numeric type.
 			if ute.Field != "" {
 				return fmt.Errorf("wrong JSON type for value of %q", ute.Field)
 			}

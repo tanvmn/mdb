@@ -17,6 +17,7 @@ func (r *Runtime) MarshalJSON() ([]byte, error) {
 	return []byte(jsonStr), nil
 }
 
+// UnmarshalJSON returns error if jsonStr isn't of format "<int32> mins" (double quotes included).
 func (r *Runtime) UnmarshalJSON(jsonStr []byte) error {
 	s, err := strconv.Unquote(string(jsonStr))
 	if err != nil {
