@@ -21,15 +21,13 @@ type Movie struct {
 
 func ValidateMovie(v *validator.Validator, m *Movie) {
 	titleLen := len(m.Title)
-	// v.Validate(m.Title != "", "title", "must be provided")
-	v.Validate(titleLen > 0, "title", "must be longer than 1 byte")
+	v.Validate(titleLen > 0, "title", "must not be empty")
 	v.Validate(titleLen <= 500, "title", "must not be longer than 500 bytes")
 
-	// v.Validate(m.Year != 0, "year", "must be provided")
 	v.Validate(m.Year >= MinMovieYear, "year", fmt.Sprintf("must not be before %v", MinMovieYear))
 	v.Validate(m.Year <= int32(time.Now().Year()), "year", "must not be in the future")
 
-	v.Validate(m.Runtime > 0, "runtime", "must have a positive integer")
+	v.Validate(m.Runtime > 0, "runtime", "must have positive integer")
 
 	genresCount := len(m.Genres)
 	v.Validate(m.Genres != nil, "genres", "must be provided")

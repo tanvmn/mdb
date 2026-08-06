@@ -30,25 +30,48 @@ func (a *app) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	a.movie(w, r, m)
 }
 
-func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+type postInput struct {
+	Title   *string       `json:"title"`
+	Year    *int32        `json:"year"`
+	Runtime *data.Runtime `json:"runtime"`
+	Genres  []string      `json:"genres"`
+}
+
+func validatePostInput(v *validator.Validator, i *postInput) {
+	mustProvided := "must be provided"
+	v.Validate(i.Title != nil, "title", mustProvided)
+	v.Validate(i.Year != nil, "year", mustProvided)
+	v.Validate(i.Runtime != nil, "runtime", mustProvided)
+}
+
+func movieFromPostInput(i *postInput) *data.Movie {
+	m := &data.Movie{
+		Genres: i.Genres,
 	}
-	if err := decodeJSON(w, r, &input); err != nil {
+	if i.Title != nil {
+		m.Title = *i.Title
+	}
+	if i.Year != nil {
+		m.Year = *i.Year
+	}
+	if i.Runtime != nil {
+		m.Runtime = *i.Runtime
+	}
+
+	return m
+}
+
+func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
+	i := new(postInput)
+	if err := decodeJSON(w, r, i); err != nil {
 		a.badRequest(w, r, err)
 		return
 	}
 
-	m := &data.Movie{
-		Title:   input.Title,
-		Year:    input.Year,
-		Runtime: input.Runtime,
-		Genres:  input.Genres,
-	}
 	v := validator.New()
+	validatePostInput(v, i)
+
+	m := movieFromPostInput(i)
 	if data.ValidateMovie(v, m); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
