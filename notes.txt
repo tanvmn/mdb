@@ -67,3 +67,24 @@ http.Server can automatically serves plain-text when a request:
 - has size that exceeds MaxHeaderBytes setting.
 
 ----------------------------------------------------------------------------------------------------------------
+
+CONNECTION POOL OF SQL.DB
+
+- sql.DB connection pool has 2 type of connections: idle and in-use.
+- a connection is marked as in-use when it's being used to perform a database task. When the task in completed, the connection is marked as idle.
+- when Go is instructed to do a database task, it looks for an idle conn in the pool.
+	  If none is found, Go creates a new one. If one is found, Go reuses it and marks as "in-use".
+- when an idle conn is reused, Go gracefully handles any problems with it.
+	  A bad conn is re-tried twice before giving up, at which point, Go removes the bad one and creates a new one.
+
+Configuring the pool:
+	- SetMaxOpensConn(): this method allows setting DBStats.MaxOpenConnections (from now: max open conns for short), which are the max of idle AND in-use (concurrently opened) conns
+		  in sql.DB pool, not in postgres itself.
+		  By default, DBStats.MaxOpenConnections=0, which means unlimited and in postgresql.conf, max_connections=100.
+		  When max open conns is unlimited and max_connections is met, pg will return a "sorry, too many clients already" error.
+		  DBStats.MaxOpenConnections should be comfortably below max_connections to leave room for other processes and sessions (don't know what they are?!).
+		  DBStats.MaxOpenConnections could help prevent database from handling a huge number of tasks at once.
+		  DBStats.MaxOpenConnections has 1 thing to consider: if max open conns are met and all conns are in-use, other database task must wait, maybe indefinitely for an idle conn,
+		  which could lead to a request to hang indefinitely. To mitigate this, use withtimeout context with database task.
+
+----------------------------------------------------------------------------------------------------------------
