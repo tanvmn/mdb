@@ -77,14 +77,50 @@ CONNECTION POOL OF SQL.DB
 - when an idle conn is reused, Go gracefully handles any problems with it.
 	  A bad conn is re-tried twice before giving up, at which point, Go removes the bad one and creates a new one.
 
-Configuring the pool:
-	- SetMaxOpensConn(): this method allows setting DBStats.MaxOpenConnections (from now: max open conns for short), which are the max of idle AND in-use (concurrently opened) conns
-		  in sql.DB pool, not in postgres itself.
-		  By default, DBStats.MaxOpenConnections=0, which means unlimited and in postgresql.conf, max_connections=100.
-		  When max open conns is unlimited and max_connections is met, pg will return a "sorry, too many clients already" error.
-		  DBStats.MaxOpenConnections should be comfortably below max_connections to leave room for other processes and sessions (don't know what they are?!).
-		  DBStats.MaxOpenConnections could help prevent database from handling a huge number of tasks at once.
-		  DBStats.MaxOpenConnections has 1 thing to consider: if max open conns are met and all conns are in-use, other database task must wait, maybe indefinitely for an idle conn,
-		  which could lead to a request to hang indefinitely. To mitigate this, use withtimeout context with database task.
+Configuring the pool by using methods of *sql.DB:
+	- SetMaxOpenConns:
+		. sets DBStats.MaxOpenConnections (MOC) (default=0 <-> unlimited). If MaxIdleConns (MIC) > 0 && MOC < MIC, MIC is reduced to MOC.
+		. MOC = idle + in-use conns in sql.DB pool.
+		. these conns are used to communicate with db, which manages its own pool of conns. By default, postgres' max conns are set by max_connections=100 in postgres.conf.
+		. if MOC > max_connections, there could be a case postgres responses error "sorry, too many clients already".
+			Therefore, MOC should be < max_connetions leaving some room for other processes to communicate with postgres.
+		. MOC could be:
+			_ bottleneck if too low
+			_ denied by postgres if too high
+		. if all of MOC are in-use, a new db task could wait forever for a conn to be available. Therefore, use context to timeout db tasks.
+
+	- SetMaxIdleConns:
+		. set MaxIdleConns (MIC) limit int sql.DB pool.
+		. high MIC could be beneficial cause fewer conns may likely need to be created.
+		. high MIC could not be beneficial cause if a conn is idle too long, it could become unusable cause the corresponding db conn may be closed.
+		. high MIC could hoard memory that could be used by the app, db.
+		. SHOULD just keep the conn idle when it's likely gonna be used again soon.
+		. SHOULD be <= MOC cause Go will reduce MIC to MOC if MIC > MOC.
+
+	- SetConnMaxLifetime:
+		. set MaxConnLifetime (MCL), the duration after which, since first created, a conn, if idle, will be expired.
+		. by default, MaxConnLifetime is unlimited, so a conn could be reused forever.
+		. a conn isn't nessessarily expired after MCL cause it could be unusable before.
+		. a conn could be in-use after MCL, so when becomes idle, it'll be expired.
+		. periodically, Go runs a background cleanup operation to removed expired conns.
+		. set MCL unlimited could help make it less likely new conns will need to be created
+		. set MCL finite could help prevent being denied from db cause db could enforce a finite MCL on its own conns.
+		. set MCL finite could make it easier to swap db gracefully behind a load balancer.
+			(I assume gracefully here means waiting for db to finish all ongoing tasks before swapping; don't know what "easier" here is about)
+		. if MCL is finite, bear in mind the frequency of conns being removed and created.
+			If there are 100 open conns, and MCL is 1min, an average of 1.67 conns could be removed and created every second.
+			A frequency that great isn't desired cause it hinders performance.
+
+	- SetConnMaxIdleTime:
+		. set MaxConnIdleTime (MCIT), the duration after which, since first idle, a conn'll be expired.
+		. by default, MCIT is unlimited.
+		. MCIT helps set MaxIdleConns high and periodically remove conns expired after MCIT.
+
+Configuring sql.DB pool in practice:
+	- as a rule of thumb, explicitly set MaxOpenConns below db's max number of conns, and low enough to act as a throttle.
+	- for a small-to-medium web apps and apis, maybe MaxOpenConns=25 (postgres' max_connetions=100). But, determine a suitable value from benchmarking and load-testing.
+	- MaxIdleConns <= MaxOpenConns -> MaxIdleConns=25 cause generally, higher could mean more reusing conns.
+	- to mitigate memory hoarding from high MaxIdleConns, set ConnMaxIdleTime=15min.
+	- for now, postgres doesn't enfore a max conn lifetime, and this app doesn't have a load balancer before postgres, so leave MaxConnLifetime unlimited.
 
 ----------------------------------------------------------------------------------------------------------------

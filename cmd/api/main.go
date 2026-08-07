@@ -20,22 +20,23 @@ func main() {
 		a.log.Error(err.Error())
 		os.Exit(1)
 	}
-	defer a.data.Close()
 }
 
 type conf struct {
 	port int
 	env  string
 	db   struct {
-		dsn string
+		dsn             string
+		maxOpenConns    int
+		maxIdleConns    int
+		maxConnIdleTime time.Duration
 	}
 }
 
 // app has dependencies for this service.
 type app struct {
 	conf
-	log  *slog.Logger
-	data *sql.DB
+	log *slog.Logger
 }
 
 func newApp() *app {
@@ -46,16 +47,18 @@ func newApp() *app {
 	flag.IntVar(&a.port, "port", 4000, "Service HTTP port")
 	flag.StringVar(&a.env, "env", "development", "Environment (development|staging|production)")
 
-	flag.StringVar(&a.db.dsn, "db-dsn", "", "PostgreSQL Data Source Name")
+	flag.StringVar(&a.db.dsn, "db-dsn", "", "PostgreSQL data source name")
+	flag.IntVar(&a.db.maxOpenConns, "db-max-open-conns", 25, "Max open connections to PostgreSQL")
+	flag.IntVar(&a.db.maxIdleConns, "db-max-idle-conns", 25, "Max idle connections to PostgreSQL")
+	flag.DurationVar(&a.db.maxConnIdleTime, "db-max-conn-idle-time", 15*time.Minute, "Max idle time of connections to PostgreSQL")
 
 	flag.Parse()
 
-	db, err := openDB(&a.conf)
+	_, err := openDB(&a.conf)
 	if err != nil {
 		a.log.Error(err.Error())
 		os.Exit(1)
 	}
-	a.data = db
 
 	return a
 }
