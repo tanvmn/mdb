@@ -18,16 +18,10 @@ func main() {
 	a := newApp()
 
 	db, err := openDB(&a.conf)
-	if err != nil {
-		a.log.Error(err.Error())
-		os.Exit(1)
-	}
+	a.handle(err)
 	defer db.Close()
 
-	if err := a.serve(); err != nil {
-		a.log.Error(err.Error())
-		os.Exit(1)
-	}
+	a.handle(a.serve())
 }
 
 // conf has configurable settings of app.
@@ -66,13 +60,20 @@ func newApp() *app {
 	return a
 }
 
-// openDB establishes a connection pool and pings to db.
+// if err != nil, slogs then exit(1).
+func (a *app) handle(err error) {
+	if err != nil {
+		a.log.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
+// openDB establishes a connection pool and pings db.
 func openDB(c *conf) (*sql.DB, error) {
 	db, err := sql.Open("postgres", c.db.dsn)
 	if err != nil {
 		return nil, err
 	}
-
 	db.SetMaxOpenConns(c.db.maxOpenConns)
 	db.SetMaxIdleConns(c.db.maxIdleConns)
 	db.SetConnMaxIdleTime(c.db.connMaxIdleTime)
