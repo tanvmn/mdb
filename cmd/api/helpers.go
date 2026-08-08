@@ -47,10 +47,10 @@ func (a *app) ok(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusOK, data)
 }
 
-// decodeJSON decodes a single JSON value in r.Body into the value pointed to by dst.
-func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	r.Body = http.MaxBytesReader(w, r.Body, maxJSONSize)
-	dec := json.NewDecoder(r.Body)
+// decodeJSON decodes a single JSON value from rc into the value pointed to by dst.
+func decodeJSON(w http.ResponseWriter, rc io.ReadCloser, dst any) error {
+	rc = http.MaxBytesReader(w, rc, maxJSONSize)
+	dec := json.NewDecoder(rc)
 	dec.DisallowUnknownFields()
 
 	err := dec.Decode(dst)

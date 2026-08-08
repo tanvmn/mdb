@@ -37,7 +37,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		Runtime data.Runtime `json:"runtime"`
 		Genres  []string     `json:"genres"`
 	}
-	if err := decodeJSON(w, r, &i); err != nil {
+	if err := decodeJSON(w, r.Body, &i); err != nil {
 		a.badRequest(w, r, err)
 		return
 	}
