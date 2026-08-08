@@ -26,7 +26,7 @@ func id(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-// json encodes data to JSON, set Content-Type: application/json, writes status, then writes the encoded data to w.
+// json encodes data to JSON, set "Content-Type: application/json", writes status, then writes the encoded data to w.
 // If encoding fails, json calls a.serverErr.
 // If writing to w fails, json serves status 500 without a body.
 func (a *app) json(w http.ResponseWriter, r *http.Request, status int, data any) {
@@ -47,7 +47,7 @@ func (a *app) ok(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusOK, data)
 }
 
-// decodeJSON decodes a single JSON value in r.Body into value pointed to by dst.
+// decodeJSON decodes a single JSON value in r.Body into the value pointed to by dst.
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxJSONSize)
 	dec := json.NewDecoder(r.Body)
@@ -63,11 +63,11 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 		switch {
 		case malformed:
 			return fmt.Errorf("JSON is malformed at byte number %v", se.Offset)
-		case errors.Is(err, io.ErrUnexpectedEOF): // this happens in some malform cases.
+		case errors.Is(err, io.ErrUnexpectedEOF):
 			return errors.New("JSON is malformed")
 		case wrongType: // this could happen if JSON number value overflows or underflows Go numeric type.
 			if ute.Field != "" {
-				return fmt.Errorf("wrong JSON type for value of %q", ute.Field)
+				return fmt.Errorf("wrong JSON type for %q", ute.Field)
 			}
 			return fmt.Errorf("wrong JSON type at byte number %v", ute.Offset)
 		case errors.Is(err, io.EOF):

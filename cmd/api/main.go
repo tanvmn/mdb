@@ -47,7 +47,7 @@ func newApp() *app {
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
 
-	flag.IntVar(&a.port, "port", 9000, "Service HTTP port")
+	flag.IntVar(&a.port, "port", 9000, "Service's HTTP port")
 	flag.StringVar(&a.env, "env", "development", "Environment (development|staging|production)")
 
 	flag.StringVar(&a.db.dsn, "db-dsn", "", "PostgreSQL data source name")
@@ -60,7 +60,7 @@ func newApp() *app {
 	return a
 }
 
-// if err != nil, slogs then exit(1).
+// handle slogs then exit(1) if err != nil
 func (a *app) handle(err error) {
 	if err != nil {
 		a.log.Error(err.Error())
