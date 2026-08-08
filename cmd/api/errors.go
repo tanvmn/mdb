@@ -6,7 +6,7 @@ import (
 )
 
 type respErr struct {
-	Code    string `json:"code"`
+	Status  string `json:"status"`
 	Message any    `json:"message"`
 }
 
@@ -17,7 +17,7 @@ func (a *app) logErr(r *http.Request, err error) {
 // err calls a.json with a respErr value as data.
 func (a *app) err(w http.ResponseWriter, r *http.Request, status int, message any) {
 	a.json(w, r, status, respErr{
-		Code:    fmt.Sprintf("%v %v", status, http.StatusText(status)),
+		Status:  fmt.Sprintf("%v %v", status, http.StatusText(status)),
 		Message: message,
 	})
 }
