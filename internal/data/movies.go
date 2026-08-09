@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,10 @@ import (
 )
 
 const MinMovieYear = 1888
+
+type MovieData struct {
+	db *sql.DB
+}
 
 type Movie struct {
 	ID        int64     `json:"id"`

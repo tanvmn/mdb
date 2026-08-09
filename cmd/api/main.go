@@ -4,15 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"flag"
+	"io"
 	"log/slog"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/tanvmn/mdb/internal/data"
 )
 
 // version will later be generated at build time.
 const version = "1.0.0"
+
+func f[T io.Reader]() []T {
+	var ts []T
+	return ts
+}
 
 func main() {
 	a := newApp()
@@ -20,6 +27,8 @@ func main() {
 	db, err := openDB(&a.conf)
 	a.handle(err)
 	defer db.Close()
+
+	a.data = data.New(db)
 
 	a.handle(a.serve())
 }
@@ -39,7 +48,8 @@ type conf struct {
 // app has dependencies for this service.
 type app struct {
 	conf
-	log *slog.Logger
+	log  *slog.Logger
+	data *data.Data
 }
 
 func newApp() *app {
