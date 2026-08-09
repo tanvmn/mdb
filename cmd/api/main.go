@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"io"
 	"log/slog"
 	"os"
 	"time"
@@ -15,11 +14,6 @@ import (
 
 // version will later be generated at build time.
 const version = "1.0.0"
-
-func f[T io.Reader]() []T {
-	var ts []T
-	return ts
-}
 
 func main() {
 	a := newApp()
