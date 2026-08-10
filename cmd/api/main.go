@@ -22,7 +22,7 @@ func main() {
 	a.handle(err)
 	defer db.Close()
 
-	a.data = data.New(db)
+	a.repo = data.New(db)
 
 	a.handle(a.serve())
 }
@@ -43,7 +43,7 @@ type conf struct {
 type app struct {
 	conf
 	log  *slog.Logger
-	data *data.Data
+	repo *data.Repo
 }
 
 func newApp() *app {

@@ -22,7 +22,7 @@ func (a *app) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := a.data.Movies.Get(id)
+	m, err := a.repo.Movies.Get(id)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			a.notFound(w, r)
@@ -59,7 +59,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.data.Movies.Add(m); err != nil {
+	if err = a.repo.Movies.Add(m); err != nil {
 		a.serverErr(w, r, err)
 		return
 	}
@@ -74,7 +74,7 @@ func (a *app) putMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := a.data.Movies.Get(id)
+	m, err := a.repo.Movies.Get(id)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			a.notFound(w, r)
@@ -106,7 +106,7 @@ func (a *app) putMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.data.Movies.Set(m); err != nil {
+	if err = a.repo.Movies.Set(m); err != nil {
 		a.serverErr(w, r, err)
 		return
 	}
@@ -121,7 +121,7 @@ func (a *app) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.data.Movies.Delete(id); err != nil {
+	if err = a.repo.Movies.Delete(id); err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			a.notFound(w, r)
 		} else {

@@ -13,13 +13,13 @@ type dester interface {
 	dest() []any
 }
 
-type Data struct {
-	Movies MovieData
+type Repo struct {
+	Movies MovieRepo
 }
 
-func New(db *sql.DB) *Data {
-	return &Data{
-		Movies: MovieData{db},
+func New(db *sql.DB) *Repo {
+	return &Repo{
+		Movies: MovieRepo{db},
 	}
 }
 

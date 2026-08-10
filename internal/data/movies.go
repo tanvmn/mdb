@@ -58,21 +58,21 @@ func ValidateMovie(v *validator.Validator, m *Movie) {
 	v.Validate(validator.Unique(m.Genres), "genres", "must not have duplicates")
 }
 
-type MovieData struct {
+type MovieRepo struct {
 	db *sql.DB
 }
 
-func (d *MovieData) Add(m *Movie) error {
+func (r *MovieRepo) Add(m *Movie) error {
 	q := `insert into movies (title, year, runtime, genres) values ($1,$2,$3,$4)
 	returning id, created_at, title, year, runtime, genres, version
 	`
 	// pq.Array adapts a Go value to a value that postgres understands.
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres)}
 
-	return queryRowAndScan(d.db, q, args, m.dest())
+	return queryRowAndScan(r.db, q, args, m.dest())
 }
 
-func (d *MovieData) Get(id int64) (*Movie, error) {
+func (r *MovieRepo) Get(id int64) (*Movie, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
@@ -80,21 +80,21 @@ func (d *MovieData) Get(id int64) (*Movie, error) {
 	q := selectMovies + " where id=$1"
 	args := []any{id}
 	m := new(Movie)
-	err := queryRowAndScan(d.db, q, args, m.dest())
+	err := queryRowAndScan(r.db, q, args, m.dest())
 
 	return m, err
 }
 
-func (d *MovieData) Set(m *Movie) error {
+func (r *MovieRepo) Set(m *Movie) error {
 	q := updateMoviesWhere + " id=$5 " + returningMovie
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.ID}
 
-	return queryRowAndScan(d.db, q, args, m.dest())
+	return queryRowAndScan(r.db, q, args, m.dest())
 }
 
-func (d *MovieData) Delete(id int64) error {
+func (r *MovieRepo) Delete(id int64) error {
 	q := "delete from movies where id=$1"
-	ra, err := rowsAffected(d.db, q, id)
+	ra, err := rowsAffected(r.db, q, id)
 	if err != nil {
 		return err
 	}
