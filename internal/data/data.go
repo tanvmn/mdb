@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-var ErrNoRecord = errors.New("data: record not found")
+var ErrRecordNotFound = errors.New("data: record not found")
 
 type Data struct {
 	Movies MovieData
