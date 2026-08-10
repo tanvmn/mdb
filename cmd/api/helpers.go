@@ -47,6 +47,11 @@ func (a *app) ok(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusOK, data)
 }
 
+// succeeded calls a.json with status 200 and wrap{"message":"succeeded"} as data.
+func (a *app) succeeded(w http.ResponseWriter, r *http.Request) {
+	a.ok(w, r, wrap{"message": "succeeded"})
+}
+
 // decodeJSON decodes a single JSON value from rc into the value pointed to by dst.
 func decodeJSON(w http.ResponseWriter, rc io.ReadCloser, dst any) error {
 	rc = http.MaxBytesReader(w, rc, maxJSONSize)
