@@ -36,10 +36,10 @@ func (a *app) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 	var i struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
 	}
 	err := decodeJSON(w, r.Body, &i)
 	if err != nil {
@@ -48,11 +48,18 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v := validator.New()
-	m := &data.Movie{
-		Title:   i.Title,
-		Year:    i.Year,
-		Runtime: i.Runtime,
-		Genres:  i.Genres,
+	v.Validate(i.Title != nil, "title", "must be provided")
+	v.Validate(i.Year != nil, "year", "must be provided")
+	v.Validate(i.Runtime != nil, "runtime", "must be provided")
+	m := &data.Movie{Genres: i.Genres}
+	if i.Title != nil {
+		m.Title = *i.Title
+	}
+	if i.Year != nil {
+		m.Year = *i.Year
+	}
+	if i.Runtime != nil {
+		m.Runtime = *i.Runtime
 	}
 	if data.ValidateMovie(v, m); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
@@ -67,7 +74,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 	a.movie(w, r, m)
 }
 
-func (a *app) putMovieHandler(w http.ResponseWriter, r *http.Request) {
+func (a *app) patchMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := id(r)
 	if err != nil {
 		a.notFound(w, r)
@@ -85,22 +92,30 @@ func (a *app) putMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var i struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
 	}
 	if err = decodeJSON(w, r.Body, &i); err != nil {
 		a.badRequest(w, r, err)
 		return
 	}
 
-	m.Title = i.Title
-	m.Year = i.Year
-	m.Runtime = i.Runtime
-	m.Genres = i.Genres
-	v := validator.New()
+	if i.Title != nil {
+		m.Title = *i.Title
+	}
+	if i.Year != nil {
+		m.Year = *i.Year
+	}
+	if i.Runtime != nil {
+		m.Runtime = *i.Runtime
+	}
+	if i.Genres != nil {
+		m.Genres = i.Genres
+	}
 
+	v := validator.New()
 	if data.ValidateMovie(v, m); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
