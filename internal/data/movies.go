@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,10 +13,9 @@ import (
 const (
 	MinMovieYear = 1888
 
-	selectMovies      = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
-	updateMovies      = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version = version+1 "
-	updateMoviesWhere = updateMovies + " where "
-	returningMovie    = " returning id, created_at, title, year, runtime, genres, version "
+	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5"
+	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
 )
 
 type Movie struct {
@@ -60,6 +60,12 @@ type MovieRepo struct {
 	db *sql.DB
 }
 
+// queryMovieAndScan call queryRowAndScan with m.dest() assigned to dest parameter.
+// The returned error (if != nil) is ErrRecordNotFound.
+func (r *MovieRepo) queryMovieAndScan(query string, args []any, m *Movie) error {
+	return queryRowAndScan(r.db, query, args, m.dest())
+}
+
 func (r *MovieRepo) Add(m *Movie) error {
 	q := `insert into movies (title, year, runtime, genres) values ($1,$2,$3,$4)
 	returning id, created_at, title, year, runtime, genres, version
@@ -67,7 +73,7 @@ func (r *MovieRepo) Add(m *Movie) error {
 	// pq.Array adapts a Go value to a value that postgres understands.
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres)}
 
-	return queryRowAndScan(r.db, q, args, m.dest())
+	return r.queryMovieAndScan(q, args, m)
 }
 
 func (r *MovieRepo) Get(id int64) (*Movie, error) {
@@ -78,16 +84,23 @@ func (r *MovieRepo) Get(id int64) (*Movie, error) {
 	q := selectMovies + " where id=$1"
 	args := []any{id}
 	m := new(Movie)
-	err := queryRowAndScan(r.db, q, args, m.dest())
+	err := r.queryMovieAndScan(q, args, m)
 
 	return m, err
 }
 
 func (r *MovieRepo) Set(m *Movie) error {
-	q := updateMoviesWhere + " id=$5 " + returningMovie
-	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.ID}
+	q := updateMoviesWhereVersion + " and id=$6 " + returningMovie
+	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.Version, m.ID}
 
-	return queryRowAndScan(r.db, q, args, m.dest())
+	if err := r.queryMovieAndScan(q, args, m); err != nil {
+		if errors.Is(err, ErrRecordNotFound) {
+			return ErrEditConflict
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (r *MovieRepo) Delete(id int64) error {

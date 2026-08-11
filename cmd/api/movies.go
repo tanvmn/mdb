@@ -51,6 +51,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 	v.Validate(i.Title != nil, "title", "must be provided")
 	v.Validate(i.Year != nil, "year", "must be provided")
 	v.Validate(i.Runtime != nil, "runtime", "must be provided")
+
 	m := &data.Movie{Genres: i.Genres}
 	if i.Title != nil {
 		m.Title = *i.Title
@@ -121,8 +122,13 @@ func (a *app) patchMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// retrying a few times doesn't seem to lessen failure rate.
 	if err = a.repo.Movies.Set(m); err != nil {
-		a.serverErr(w, r, err)
+		if errors.Is(err, data.ErrEditConflict) {
+			a.editConflict(w, r)
+		} else {
+			a.serverErr(w, r, err)
+		}
 		return
 	}
 

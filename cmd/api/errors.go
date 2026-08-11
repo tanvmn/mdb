@@ -42,3 +42,13 @@ func (a *app) badRequest(w http.ResponseWriter, r *http.Request, err error) {
 func (a *app) unprocessableEntity(w http.ResponseWriter, r *http.Request, message any) {
 	a.err(w, r, http.StatusUnprocessableEntity, message)
 }
+
+// conflict calls a.err with status 409.
+func (a *app) conflict(w http.ResponseWriter, r *http.Request, message any) {
+	a.err(w, r, http.StatusConflict, message)
+}
+
+// editConflict calls a.conflict with "edit conflict occurred, try again" as message.
+func (a *app) editConflict(w http.ResponseWriter, r *http.Request) {
+	a.conflict(w, r, "edit conflict occurred, try again")
+}
