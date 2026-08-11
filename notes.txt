@@ -124,3 +124,26 @@ Configuring sql.DB pool in practice:
 	- for now, postgres doesn't enfore a max conn lifetime, and this app doesn't have a load balancer before postgres, so leave MaxConnLifetime unlimited.
 
 ----------------------------------------------------------------------------------------------------------------
+
+PARTIALLY UPDATING A RECORD
+
+- The implemented optimistic concurrency control can be used with "If-Not-Match" or "X-Expected-Version" header, like so:
+	ver := r.Header.Get("X-Expected-Version")
+	if ver != "" {
+		if strconv.Itoa(int(m.Version)) != ver {
+			a.editConflict(w,r)
+			return
+		}
+	}
+
+Distinguishing version (state) of the a record
+
+- Using an incrementing integer for version is safe, cheap. So this method should be prefered.
+- Don't use timestamp cause 2 updates could result in 1 timestamp if timestamp's resolution isn't high enough.
+- If it's important that version isn't easily guessable, use UUID for version (postgres has UUID type and uuid-ossp extension), like so:
+	update movies
+	set title=$1, year=$2, runtime=$3, genres=$4, version=uuid_generate_v4()
+	where id=$5 and version=$6
+	returning version;
+
+----------------------------------------------------------------------------------------------------------------

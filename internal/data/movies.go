@@ -60,8 +60,8 @@ type MovieRepo struct {
 	db *sql.DB
 }
 
-// queryMovieAndScan call queryRowAndScan with m.dest() assigned to dest parameter.
-// The returned error (if != nil) is ErrRecordNotFound.
+// queryMovieAndScan call queryRowAndScan with m.dest() assigned to dest.
+// ErrRecordNotFound is returned when no movie is found.
 func (r *MovieRepo) queryMovieAndScan(query string, args []any, m *Movie) error {
 	return queryRowAndScan(r.db, query, args, m.dest())
 }

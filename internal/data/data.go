@@ -1,9 +1,13 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
+
+const timeoutDuration = 3 * time.Second
 
 var (
 	ErrRecordNotFound = errors.New("data: record not found")
@@ -27,9 +31,12 @@ func New(db *sql.DB) *Repo {
 }
 
 // queryRowAndScan queries a row from db and scan each column to each of dest.
-// ErrRecordNotFound is returned if db returns no rows.
+// queryRowAndScan times out after timeoutDuration (const).
+// ErrRecordNotFound is returned when db returns no rows.
 func queryRowAndScan(db *sql.DB, query string, args []any, dest []any) error {
-	if err := db.QueryRow(query, args...).Scan(dest...); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+	defer cancel()
+	if err := db.QueryRowContext(ctx, query, args...).Scan(dest...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrRecordNotFound
 		}
@@ -40,8 +47,11 @@ func queryRowAndScan(db *sql.DB, query string, args []any, dest []any) error {
 }
 
 // rowsAffected executes query in db and returned the rows affected.
+// rowsAffected times out after timeoutDuration (const).
 func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
-	result, err := db.Exec(query, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+	defer cancel()
+	result, err := db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
