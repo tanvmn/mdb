@@ -15,10 +15,16 @@ var (
 	ErrEditConflict   = errors.New("data: edit conflict")
 )
 
-// queryDester represents a struct whose queryDest method returns a pointer to the struct and a slice of pointers to each of the struct's fields.
+// dester represents a pointer receiver of a struct, whose dest method returns a slice of pointers to each of the struct's fields.
 // This is for scanning db query result into struct fields.
-type queryDester interface {
-	queryDest() (queryDester, []any)
+type dester interface {
+	dest() []any
+}
+
+// newDesterer's concrete type is the same as dester's.
+// newDesterer's newDester returns a new instance of dester's concrete type.
+type newDesterer interface {
+	newDester() dester
 }
 
 type Repo struct {
@@ -60,9 +66,7 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 	return result.RowsAffected()
 }
 
-// query queries rows from db and returns them as []T.
-// query will time out if db doesn't response after timeoutDuration (const).
-func query[T queryDester](db *sql.DB, query string, args []any) ([]T, error) {
+func query[T newDesterer](db *sql.DB, query string, args []any) ([]T, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, query, args...)
@@ -74,13 +78,13 @@ func query[T queryDester](db *sql.DB, query string, args []any) ([]T, error) {
 	ts := []T{}
 	for rows.Next() {
 		var t T
-		qd, dest := t.queryDest()
-		if err = rows.Scan(dest...); err != nil {
-			return nil, err
-		}
-		t, ok := qd.(T)
+		d := t.newDester()
+		t, ok := d.(T)
 		if !ok {
-			return nil, errors.New("data: queryRows: concrete type of interface queryDest value, which is returned from T.queryDest(), isn't T")
+			return nil, errors.New("data: query: T.newDester() didn't return a value of T")
+		}
+		if err = rows.Scan(d.dest()...); err != nil {
+			return nil, err
 		}
 		ts = append(ts, t)
 	}

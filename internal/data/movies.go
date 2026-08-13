@@ -40,19 +40,8 @@ func (m *Movie) dest() []any {
 	}
 }
 
-func (m *Movie) queryDest() (queryDester, []any) {
-	if m == nil {
-		m = &Movie{}
-	}
-	return m, []any{
-		&m.ID,
-		&m.CreatedAt,
-		&m.Title,
-		&m.Year,
-		&m.Runtime,
-		pq.Array(&m.Genres),
-		&m.Version,
-	}
+func (m *Movie) newDester() dester {
+	return &Movie{}
 }
 
 func ValidateMovie(v *validator.Validator, m *Movie) {
