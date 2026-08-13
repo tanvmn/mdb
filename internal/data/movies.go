@@ -14,6 +14,7 @@ const (
 	MinMovieYear = 1888
 
 	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	filterMovies             = " where (lower(title)=lower($1) or $1='') and (genres @> $2 or $2='{}') "
 	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5"
 	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
 )
@@ -117,9 +118,10 @@ func (r *MovieRepo) Delete(id int64) error {
 }
 
 // GetMany for now just returns all movies.
-func (r *MovieRepo) GetMany() ([]*Movie, error) {
-	q := selectMovies + " order by id"
+func (r *MovieRepo) GetMany(title string, genres []string, f *Filters) ([]*Movie, error) {
+	q := selectMovies + filterMovies + " order by id"
+	args := []any{title, pq.Array(genres)}
 	newMovie := func() *Movie { return &Movie{} }
 
-	return query(r.db, q, nil, newMovie)
+	return query(r.db, q, args, newMovie)
 }

@@ -180,15 +180,15 @@ func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ms, err := a.repo.Movies.GetMany()
+	ms, err := a.repo.Movies.GetMany(i.Title, i.Genres, &i.Filters)
 	if err != nil {
 		a.serverErr(w, r, err)
 		return
 	}
-	if len(ms) == 0 {
-		a.notFound(w, r)
-		return
-	}
+	// if len(ms) == 0 {
+	// 	a.notFound(w, r)
+	// 	return
+	// }
 
 	a.movies(w, r, ms)
 }
