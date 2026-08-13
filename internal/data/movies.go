@@ -116,6 +116,7 @@ func (r *MovieRepo) Delete(id int64) error {
 	return nil
 }
 
+// GetMany for now just returns all movies.
 func (r *MovieRepo) GetMany() ([]*Movie, error) {
 	q := selectMovies + " order by id"
 	newMovie := func() *Movie { return &Movie{} }
