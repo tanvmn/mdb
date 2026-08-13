@@ -40,10 +40,6 @@ func (m *Movie) dest() []any {
 	}
 }
 
-func (m *Movie) newDester() dester {
-	return &Movie{}
-}
-
 func ValidateMovie(v *validator.Validator, m *Movie) {
 	v.Validate(m.Title != "", "title", "must not be an empty string")
 	v.Validate(len(m.Title) <= 500, "title", "must not be longer than 500 bytes")
@@ -122,6 +118,7 @@ func (r *MovieRepo) Delete(id int64) error {
 
 func (r *MovieRepo) GetMany() ([]*Movie, error) {
 	q := selectMovies + " order by id"
+	newMovie := func() *Movie { return &Movie{} }
 
-	return query[*Movie](r.db, q, nil)
+	return query(r.db, q, nil, newMovie)
 }
