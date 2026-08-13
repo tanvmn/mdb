@@ -62,7 +62,7 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 
 // query queries rows from db and returns them as []T.
 // query times out after timeoutDuration (const).
-func query[T dester](db *sql.DB, query string, args []any, newDester func() T) ([]T, error) {
+func query[T dester](db *sql.DB, query string, args []any, newT func() T) ([]T, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, query, args...)
@@ -73,7 +73,7 @@ func query[T dester](db *sql.DB, query string, args []any, newDester func() T) (
 
 	ts := []T{}
 	for rows.Next() {
-		t := newDester()
+		t := newT()
 		if err = rows.Scan(t.dest()...); err != nil {
 			return nil, err
 		}
