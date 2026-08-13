@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/tanvmn/mdb/internal/data"
+	"github.com/tanvmn/mdb/internal/validator"
 )
 
 const maxJSONSize = 1_048_576 // bytes
@@ -60,8 +62,7 @@ func decodeJSON(w http.ResponseWriter, rc io.ReadCloser, dst any) error {
 	dec := json.NewDecoder(rc)
 	dec.DisallowUnknownFields()
 
-	err := dec.Decode(dst)
-	if err != nil {
+	if err := dec.Decode(dst); err != nil {
 		se, malformed := errors.AsType[*json.SyntaxError](err)
 		ute, wrongType := errors.AsType[*json.UnmarshalTypeError](err)
 		_, invalidDest := errors.AsType[*json.InvalidUnmarshalError](err)
@@ -93,9 +94,46 @@ func decodeJSON(w http.ResponseWriter, rc io.ReadCloser, dst any) error {
 			return err
 		}
 	}
-	if err = dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+	if err := dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return errors.New("body must only contain a single JSON value")
 	}
 
 	return nil
+}
+
+// parseString either returns the value corresponded wih key as a string, or returns defaultVal if key is not found.
+func parseString(query url.Values, key, defaultVal string) string {
+	s := query.Get(key)
+	if s == "" {
+		return defaultVal
+	}
+
+	return s
+}
+
+// parseCSV either returns the csv corresponded wih key as a []string, or returns defaultVal if key is not found.
+func parseCSV(query url.Values, key string, defaultVal []string) []string {
+	csv := query.Get(key)
+	if csv == "" {
+		return defaultVal
+	}
+
+	return strings.Split(csv, ",")
+}
+
+// parseInt parses the value corresponded with key to int, and returns.
+// defaultVal is returned if key is not found.
+// An error is added to v if parsing fails.
+func parseInt(query url.Values, key string, defaultVal int, v *validator.Validator) int {
+	s := query.Get(key)
+	if s == "" {
+		return defaultVal
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddErr(key, "must be integer")
+		return defaultVal
+	}
+
+	return i
 }

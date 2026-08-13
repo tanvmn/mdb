@@ -41,8 +41,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		Runtime *data.Runtime `json:"runtime"`
 		Genres  []string      `json:"genres"`
 	}
-	err := decodeJSON(w, r.Body, &i)
-	if err != nil {
+	if err := decodeJSON(w, r.Body, &i); err != nil {
 		a.badRequest(w, r, err)
 		return
 	}
@@ -67,7 +66,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.repo.Movies.Add(m); err != nil {
+	if err := a.repo.Movies.Add(m); err != nil {
 		a.serverErr(w, r, err)
 		return
 	}
@@ -152,4 +151,44 @@ func (a *app) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.succeeded(w, r)
+}
+
+// movies calls a.ok with wrap{"movies":ms} as data.
+func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie) {
+	a.ok(w, r, wrap{"movies": ms})
+}
+
+func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
+	v := validator.New()
+	q := r.URL.Query()
+	var i struct {
+		Title  string
+		Genres []string
+		data.Filters
+	}
+	i.Title = parseString(q, "title", "")
+	i.Genres = parseCSV(q, "genres", []string{})
+	i.Page = parseInt(q, "page", 1, v)
+	i.PageSize = parseInt(q, "page_size", 20, v)
+	i.Sort = parseString(q, "sort", "id")
+	i.SortList = []string{"id", "-id", "title", "-title", "year", "-year", "runtime", "-runtime"}
+	// at this point, service could serve 400 if !v.Valid(), but the next step is still using v to validate input,
+	// so continue validating and serve 422 if !v.Valid().
+
+	if data.ValidateFilters(v, &i.Filters); !v.Valid() {
+		a.unprocessableEntity(w, r, v.Errors)
+		return
+	}
+
+	ms, err := a.repo.Movies.GetMany()
+	if err != nil {
+		a.serverErr(w, r, err)
+		return
+	}
+	if len(ms) == 0 {
+		a.notFound(w, r)
+		return
+	}
+
+	a.movies(w, r, ms)
 }

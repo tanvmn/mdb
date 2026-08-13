@@ -40,6 +40,21 @@ func (m *Movie) dest() []any {
 	}
 }
 
+func (m *Movie) queryDest() (queryDester, []any) {
+	if m == nil {
+		m = &Movie{}
+	}
+	return m, []any{
+		&m.ID,
+		&m.CreatedAt,
+		&m.Title,
+		&m.Year,
+		&m.Runtime,
+		pq.Array(&m.Genres),
+		&m.Version,
+	}
+}
+
 func ValidateMovie(v *validator.Validator, m *Movie) {
 	v.Validate(m.Title != "", "title", "must not be an empty string")
 	v.Validate(len(m.Title) <= 500, "title", "must not be longer than 500 bytes")
@@ -60,10 +75,10 @@ type MovieRepo struct {
 	db *sql.DB
 }
 
-// queryMovieAndScan call queryRowAndScan with m.dest() assigned to dest.
+// queryMovie calls queryRow with m.dest() assigned to dest.
 // ErrRecordNotFound is returned when no movie is found.
-func (r *MovieRepo) queryMovieAndScan(query string, args []any, m *Movie) error {
-	return queryRowAndScan(r.db, query, args, m.dest())
+func (r *MovieRepo) queryMovie(query string, args []any, m *Movie) error {
+	return queryRow(r.db, query, args, m.dest())
 }
 
 func (r *MovieRepo) Add(m *Movie) error {
@@ -73,7 +88,7 @@ func (r *MovieRepo) Add(m *Movie) error {
 	// pq.Array adapts a Go value to a value that postgres understands.
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres)}
 
-	return r.queryMovieAndScan(q, args, m)
+	return r.queryMovie(q, args, m)
 }
 
 func (r *MovieRepo) Get(id int64) (*Movie, error) {
@@ -84,7 +99,7 @@ func (r *MovieRepo) Get(id int64) (*Movie, error) {
 	q := selectMovies + " where id=$1"
 	args := []any{id}
 	m := new(Movie)
-	err := r.queryMovieAndScan(q, args, m)
+	err := r.queryMovie(q, args, m)
 
 	return m, err
 }
@@ -93,7 +108,7 @@ func (r *MovieRepo) Set(m *Movie) error {
 	q := updateMoviesWhereVersion + " and id=$6 " + returningMovie
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.Version, m.ID}
 
-	if err := r.queryMovieAndScan(q, args, m); err != nil {
+	if err := r.queryMovie(q, args, m); err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
 			return ErrEditConflict
 		}
@@ -114,4 +129,10 @@ func (r *MovieRepo) Delete(id int64) error {
 	}
 
 	return nil
+}
+
+func (r *MovieRepo) GetMany() ([]*Movie, error) {
+	q := selectMovies + " order by id"
+
+	return query[*Movie](r.db, q, nil)
 }

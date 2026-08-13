@@ -22,7 +22,7 @@ func main() {
 	a.handle(err)
 	defer db.Close()
 
-	a.repo = data.New(db)
+	a.repo = data.NewRepo(db)
 
 	a.handle(a.serve())
 }
