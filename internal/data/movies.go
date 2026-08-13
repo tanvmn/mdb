@@ -14,9 +14,17 @@ const (
 	MinMovieYear = 1888
 
 	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
-	filterMovies             = " where (lower(title)=lower($1) or $1='') and (genres @> $2 or $2='{}') "
 	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5"
 	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
+
+	// From user perspective: for title, if the lower, upper or mix case of the entire $1 appears in title, the expression is true.
+	// to_tsvector splits its input into lexemes.
+	// plainto_tsquery splits converts its input to a format that postgres understands.
+	// In this case, plaito_tsquery('simple', $1), which is set at 'simple' config, normarlizes the value of $1 (don't know what this means),
+	// removes special characters, and adds & operator between words. The result of plainto_tsquery('simple', '//\\@!^hello+world   ') is	'hello' & 'world'.
+	// The @@ operator is the match operator.
+	// The expression essentially returns true if everthing returned from plainto_tsquery appears in the lexemes returned from to_tsvector.
+	filterMovies = " where (to_tsvector('simple',title) @@ plainto_tsquery('simple',$1) or $1='') and (genres @> $2 or $2='{}') "
 )
 
 type Movie struct {
