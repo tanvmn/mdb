@@ -25,6 +25,15 @@ const (
 	// 	removes special characters, and adds '&' operator between words. The result of plainto_tsquery('simple', '//\\@!^hello+world   ') is 'hello' & 'world'.
 	// The @@ operator is the match operator.
 	// The expression essentially returns true if everthing returned from plainto_tsquery appears in the lexemes returned from to_tsvector.
+	//
+	// Note that in 'english' config, if the input for query only contains common (stop) words, the text search expression will be ignored by being evaluated to false.
+	//	mdb=> select to_tsvector('simple',title) @@ plainto_tsquery('english','the') from movies;
+	//	NOTICE:  text-search query contains only stop words or doesn't contain lexemes, ignored
+	//	 ?column?
+	//	----------
+	//	 f
+	//	 f
+	//	 f
 	filterMovies = " where ((to_tsvector('simple',title) @@ plainto_tsquery('simple',$1)) or $1='') and (genres @> $2 or $2='{}') "
 )
 
