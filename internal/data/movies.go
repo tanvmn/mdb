@@ -135,9 +135,9 @@ func (r *MovieRepo) Delete(id int64) error {
 	return nil
 }
 
-// GetMany returned movies filtered by client's input.
+// GetMany returned movies filtered by f.
 func (r *MovieRepo) GetMany(title string, genres []string, f *Filters) ([]*Movie, error) {
-	q := selectMovies + filterMovies + " order by id"
+	q := selectMovies + filterMovies + f.orderBy()
 	args := []any{title, pq.Array(genres)}
 	newMovie := func() *Movie { return &Movie{} }
 

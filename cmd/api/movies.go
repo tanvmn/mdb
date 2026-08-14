@@ -185,10 +185,6 @@ func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverErr(w, r, err)
 		return
 	}
-	// if len(ms) == 0 {
-	// 	a.notFound(w, r)
-	// 	return
-	// }
 
 	a.movies(w, r, ms)
 }
