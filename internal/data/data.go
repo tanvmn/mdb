@@ -62,27 +62,29 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 }
 
 // query queries rows and returns them as []T.
+// total is the total returned records before filtering.
 // query times out after timeoutDuration (const).
-func query[T dester](db *sql.DB, query string, args []any, newT func() T) ([]T, error) {
+func query[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	ts := []T{}
+	ts = []T{}
 	for rows.Next() {
 		t := newT()
-		if err = rows.Scan(t.dest()...); err != nil {
-			return nil, err
+		dest := append([]any{&total}, t.dest()...)
+		if err = rows.Scan(dest...); err != nil {
+			return nil, 0, err
 		}
 		ts = append(ts, t)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return ts, nil
+	return ts, total, nil
 }

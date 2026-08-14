@@ -154,37 +154,34 @@ func (a *app) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // movies calls a.ok with wrap{"movies":ms} as data.
-func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie) {
-	a.ok(w, r, wrap{"movies": ms})
+func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie, meta data.Metadata) {
+	a.ok(w, r, wrap{"movies": ms, "metadata": meta})
 }
 
 func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 	v := validator.New()
 	q := r.URL.Query()
-	var i struct {
-		Title  string
-		Genres []string
-		data.Filters
-	}
-	i.Title = parseString(q, "title", "")
-	i.Genres = parseCSV(q, "genres", []string{})
-	i.Page = parseInt(q, "page", 1, v)
-	i.PageSize = parseInt(q, "page_size", 20, v)
-	i.Sort = parseString(q, "sort", "id")
-	i.SortList = []string{"id", "-id", "title", "-title", "year", "-year", "runtime", "-runtime"}
+	var f data.MovieFilter
+
+	f.Title = parseString(q, "title", "")
+	f.Genres = parseCSV(q, "genres", []string{})
+	f.Page = parseInt(q, "page", 1, v)
+	f.PageSize = parseInt(q, "page_size", 20, v)
+	f.Sort = parseString(q, "sort", "id")
+	f.SortList = []string{"id", "-id", "title", "-title", "year", "-year", "runtime", "-runtime"}
 	// at this point, service could serve 400 if !v.Valid(), but the next step is still using v to validate input,
 	// so continue validating and serve 422 if !v.Valid().
 
-	if data.ValidateFilters(v, &i.Filters); !v.Valid() {
+	if data.ValidateFilter(v, &f.Filter); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
 	}
 
-	ms, err := a.repo.Movies.GetMany(i.Title, i.Genres, &i.Filters)
+	ms, meta, err := a.repo.Movies.GetMany(&f)
 	if err != nil {
 		a.serverErr(w, r, err)
 		return
 	}
 
-	a.movies(w, r, ms)
+	a.movies(w, r, ms, meta)
 }

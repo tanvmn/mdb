@@ -13,7 +13,7 @@ import (
 const (
 	MinMovieYear = 1888
 
-	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	selectMovies             = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
 	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 "
 	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
 
@@ -45,6 +45,11 @@ type Movie struct {
 	Runtime   Runtime   `json:"runtime,omitzero"` // don't embed Runtime, cause (*)Movie will satisfies json.Marshaler, then JSON of (*)Movie will be JSON of (*)Runtime.
 	Genres    []string  `json:"genres,omitzero"`
 	Version   int32     `json:"version"`
+}
+type MovieFilter struct {
+	Title  string
+	Genres []string
+	Filter
 }
 
 func (m *Movie) dest() []any {
@@ -136,10 +141,15 @@ func (r *MovieRepo) Delete(id int64) error {
 }
 
 // GetMany returned movies filtered by f.
-func (r *MovieRepo) GetMany(title string, genres []string, f *Filters) ([]*Movie, error) {
-	q := selectMovies + filterMovies + f.orderBy()
-	args := []any{title, pq.Array(genres)}
+func (r *MovieRepo) GetMany(f *MovieFilter) ([]*Movie, Metadata, error) {
+	q := selectMovies + filterMovies + f.orderBy() + " limit $3 offset $4 "
+	args := []any{f.Title, pq.Array(f.Genres), f.limit(), f.offset()}
 	newMovie := func() *Movie { return &Movie{} }
 
-	return query(r.db, q, args, newMovie)
+	ms, total, err := query(r.db, q, args, newMovie)
+	if err != nil {
+		return []*Movie{}, Metadata{}, err
+	}
+
+	return ms, metadata(total, f.Page, f.PageSize), nil
 }
