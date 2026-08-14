@@ -62,7 +62,7 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 }
 
 // query queries rows and returns them as []T.
-// total is the total returned records before filtering.
+// total is the number of records before pagination.
 // query times out after timeoutDuration (const).
 func query[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
