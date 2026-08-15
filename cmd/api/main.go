@@ -37,6 +37,11 @@ type conf struct {
 		maxIdleConns    int
 		connMaxIdleTime time.Duration
 	}
+	limit struct {
+		rps    float64
+		burst  int
+		enable bool
+	}
 }
 
 // app has dependencies for this service.
@@ -58,6 +63,10 @@ func newApp() *app {
 	flag.IntVar(&a.db.maxOpenConns, "db-max-open-conns", 25, "Max open connections to PostgreSQL")
 	flag.IntVar(&a.db.maxIdleConns, "db-max-idle-conns", 25, "Max idle connections to PostgreSQL")
 	flag.DurationVar(&a.db.connMaxIdleTime, "db-conn-max-idle-time", 15*time.Minute, "Max idle time of connections to PostgreSQL")
+
+	flag.Float64Var(&a.limit.rps, "ratelimit-rps", 2, "Rate limit's max requests per second")
+	flag.IntVar(&a.limit.burst, "ratelimit-burst", 4, "Rate limit's max burst of requests")
+	flag.BoolVar(&a.limit.enable, "ratelimit-enable", true, "Enable rate limit")
 
 	flag.Parse()
 

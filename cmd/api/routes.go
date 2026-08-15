@@ -15,5 +15,5 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PATCH /v1/movies/{id}", a.patchMovieHandler)
 	mux.HandleFunc("DELETE /v1/movies/{id}", a.deleteMovieHandler)
 
-	return chain([]middleware{a.recoverPanic, a.logRequest}, mux)
+	return chain([]middleware{a.recoverPanic, a.rateLimit, a.logRequest}, mux)
 }

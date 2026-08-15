@@ -52,3 +52,8 @@ func (a *app) conflict(w http.ResponseWriter, r *http.Request, message any) {
 func (a *app) editConflict(w http.ResponseWriter, r *http.Request) {
 	a.conflict(w, r, "edit conflict occurred, try again")
 }
+
+// tooManyRequests calls a.err with status 429, with "exceeded rate limit, retry later" as message.
+func (a *app) tooManyRequests(w http.ResponseWriter, r *http.Request) {
+	a.err(w, r, http.StatusTooManyRequests, "exceeded rate limit, retry later")
+}
