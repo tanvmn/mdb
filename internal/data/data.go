@@ -64,6 +64,9 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 // query queries rows and returns them as []T.
 // total is the number of records before pagination.
 // query times out after timeoutDuration (const).
+// T must be a pointer type to enable mutating destinations returned from T.dest();
+// therefore, newT must returns a non-nil pointer to a value of the non-pointer type of T.
+// So if T is *Movie, then newT return a non-nil *Movie.
 func query[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
