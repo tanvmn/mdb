@@ -13,7 +13,8 @@ import (
 const (
 	MinMovieYear = 1888
 
-	selectMovies             = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	selectMoviesAndCount     = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
 	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 "
 	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
 
@@ -142,7 +143,7 @@ func (r *MovieRepo) Delete(id int64) error {
 
 // GetMany returned movies filtered by f.
 func (r *MovieRepo) GetMany(f *MovieFilter) ([]*Movie, Metadata, error) {
-	q := selectMovies + filterMovies + f.orderBy() + " limit $3 offset $4 "
+	q := selectMoviesAndCount + filterMovies + f.orderBy() + " limit $3 offset $4 "
 	args := []any{f.Title, pq.Array(f.Genres), f.limit(), f.offset()}
 	newMovie := func() *Movie { return &Movie{} }
 

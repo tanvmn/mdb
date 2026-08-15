@@ -12,7 +12,7 @@ const timeoutDuration = 3 * time.Second
 
 var (
 	ErrRecordNotFound = errors.New("data: record not found")
-	// ErrEditConflict is returned when race condition (usually data race) occurs while multiple go routines update the same record.
+	// ErrEditConflict will be returned when race condition (usually data race) occurs while multiple go routines update the same record.
 	ErrEditConflict = errors.New("data: edit conflict")
 )
 
