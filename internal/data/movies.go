@@ -13,8 +13,10 @@ import (
 const (
 	MinMovieYear = 1888
 
+	// direction to maybe follow: a where clause which doesn't need to be built dynamically
+	// by making bool expressions of each input to either be evaluated or if not provided, be evaluated true.
 	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
-	selectMoviesAndCount     = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	selectCountAndMovies     = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
 	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 "
 	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
 
@@ -27,7 +29,7 @@ const (
 	// The @@ operator is the match operator.
 	// The expression essentially returns true if everthing returned from plainto_tsquery appears in the lexemes returned from to_tsvector.
 	//
-	// Note that in 'english' config, if the input for query only contains common (stop) words, the text search expression will be ignored by being evaluated to false.
+	// Note that in 'english' config, if the input for query only contains common (stop) words, the text search expression will be ignored and evaluated to false.
 	//	mdb=> select to_tsvector('simple',title) @@ plainto_tsquery('english','the') from movies;
 	//	NOTICE:  text-search query contains only stop words or doesn't contain lexemes, ignored
 	//	 ?column?
@@ -143,7 +145,7 @@ func (r *MovieRepo) Delete(id int64) error {
 
 // GetMany returned movies filtered by f.
 func (r *MovieRepo) GetMany(f *MovieFilter) ([]*Movie, Metadata, error) {
-	q := selectMoviesAndCount + filterMovies + f.orderBy() + " limit $3 offset $4 "
+	q := selectCountAndMovies + filterMovies + f.orderBy() + " limit $3 offset $4 "
 	args := []any{f.Title, pq.Array(f.Genres), f.limit(), f.offset()}
 	newMovie := func() *Movie { return &Movie{} }
 

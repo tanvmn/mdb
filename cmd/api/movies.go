@@ -161,7 +161,7 @@ func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie, m
 func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 	v := validator.New()
 	q := r.URL.Query()
-	var f data.MovieFilter
+	f := new(data.MovieFilter)
 
 	f.Title = parseString(q, "title", "")
 	f.Genres = parseCSV(q, "genres", []string{})
@@ -177,7 +177,7 @@ func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ms, meta, err := a.repo.Movies.GetMany(&f)
+	ms, meta, err := a.repo.Movies.GetMany(f)
 	if err != nil {
 		a.serverErr(w, r, err)
 		return

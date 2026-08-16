@@ -121,7 +121,7 @@ func parseCSV(query url.Values, key string, defaultVal []string) []string {
 	return strings.Split(csv, ",")
 }
 
-// parseInt parses the value corresponded with key to int, and returns.
+// parseInt parses the value corresponded with key to int.
 // defaultVal is returned if key is not found.
 // An error is added to v if parsing fails.
 func parseInt(query url.Values, key string, defaultVal int, v *validator.Validator) int {
@@ -131,7 +131,7 @@ func parseInt(query url.Values, key string, defaultVal int, v *validator.Validat
 	}
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		v.AddErr(key, "must be integer")
+		v.AddErr(key, "must be sensible integer")
 		return defaultVal
 	}
 

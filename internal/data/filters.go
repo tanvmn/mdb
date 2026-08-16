@@ -12,10 +12,10 @@ type Filter struct {
 	Page     int
 	PageSize int
 	Sort     string
-	SortList []string
+	SortList []string // contains valid sort parameter values.
 }
 
-func (f *Filter) sortValid() bool {
+func (f *Filter) sortIsValid() bool {
 	return slices.Contains(f.SortList, f.Sort)
 }
 
@@ -26,13 +26,13 @@ func ValidateFilter(v *validator.Validator, f *Filter) {
 	v.Validate(f.PageSize > 0, "page_size", "must be more than 0")
 	v.Validate(f.PageSize <= 100, "page_size", "must not be more than 100")
 
-	v.Validate(f.sortValid(), "sort", "invalid")
+	v.Validate(f.sortIsValid(), "sort", "invalid")
 }
 
 // sortColumn returns the valid sort column without the potential prefix "-".
 // If f.Sort isn't valid, sortColumn panics.
 func (f *Filter) sortColumn() string {
-	if f.sortValid() {
+	if f.sortIsValid() {
 		return strings.TrimPrefix(f.Sort, "-")
 	}
 
