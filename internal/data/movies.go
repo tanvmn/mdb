@@ -143,7 +143,7 @@ func (r *MovieRepo) Delete(id int64) error {
 	return nil
 }
 
-// GetMany returned movies filtered by f.
+// GetMany returned movies filtered and paginated by f.
 func (r *MovieRepo) GetMany(f *MovieFilter) ([]*Movie, Metadata, error) {
 	q := selectCountAndMovies + filterMovies + f.orderBy() + " limit $3 offset $4 "
 	args := []any{f.Title, pq.Array(f.Genres), f.limit(), f.offset()}

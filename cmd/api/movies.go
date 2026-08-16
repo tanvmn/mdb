@@ -154,8 +154,8 @@ func (a *app) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // movies calls a.ok with wrap{"movies":ms} as data.
-func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie, meta data.Metadata) {
-	a.ok(w, r, wrap{"movies": ms, "metadata": meta})
+func (a *app) movies(w http.ResponseWriter, r *http.Request, ms []*data.Movie, m data.Metadata) {
+	a.ok(w, r, wrap{"movies": ms, "metadata": m})
 }
 
 func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
