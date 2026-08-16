@@ -27,6 +27,14 @@ func main() {
 	a.handle(a.serve())
 }
 
+// handle slogs then os.Exit(1) if err != nil.
+func (a *app) handle(err error) {
+	if err != nil {
+		a.log.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
 // conf has configurable settings of app.
 type conf struct {
 	port int
@@ -37,7 +45,7 @@ type conf struct {
 		maxIdleConns    int
 		connMaxIdleTime time.Duration
 	}
-	limit struct {
+	rate struct {
 		rps    float64
 		burst  int
 		enable bool
@@ -64,21 +72,13 @@ func newApp() *app {
 	flag.IntVar(&a.db.maxIdleConns, "db-max-idle-conns", 25, "Max idle connections to PostgreSQL")
 	flag.DurationVar(&a.db.connMaxIdleTime, "db-conn-max-idle-time", 15*time.Minute, "Max idle time of connections to PostgreSQL")
 
-	flag.Float64Var(&a.limit.rps, "ratelimit-rps", 2, "Rate limit's max requests per second")
-	flag.IntVar(&a.limit.burst, "ratelimit-burst", 4, "Rate limit's max burst of requests")
-	flag.BoolVar(&a.limit.enable, "ratelimit-enable", true, "Enable rate limit")
+	flag.Float64Var(&a.rate.rps, "ratelimit-rps", 2, "Rate limit's max requests per second")
+	flag.IntVar(&a.rate.burst, "ratelimit-burst", 4, "Rate limit's max burst of requests")
+	flag.BoolVar(&a.rate.enable, "ratelimit-enable", true, "Enable rate limit")
 
 	flag.Parse()
 
 	return a
-}
-
-// handle slogs then exit(1) if err != nil
-func (a *app) handle(err error) {
-	if err != nil {
-		a.log.Error(err.Error())
-		os.Exit(1)
-	}
 }
 
 // openDB establishes a connection pool and pings db.

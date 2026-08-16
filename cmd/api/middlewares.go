@@ -55,7 +55,7 @@ func (a *app) logRequest(next http.Handler) http.Handler {
 
 // rateLimit returns a handler that implements a rate limiting, which has a refill rate and a burst limit.
 func (a *app) rateLimit(next http.Handler) http.Handler {
-	if !a.limit.enable {
+	if !a.rate.enable {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r)
 		})
@@ -68,8 +68,8 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 	var mu sync.Mutex
 	clients := make(map[string]*client)
 
-	// Delete any client that hasn't visit for more than 3min.
-	// Remember, later, to use wrap this in a helper that handles panic.
+	// Every minute, delete any client that hasn't visit for more than 3min.
+	// Remember, later, to wrap this in a helper that handles panic.
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -88,7 +88,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 		mu.Lock()
 		c, found := clients[ip]
 		if !found {
-			clients[ip] = &client{lim: rate.NewLimiter(rate.Limit(a.limit.rps), a.limit.burst)}
+			clients[ip] = &client{lim: rate.NewLimiter(rate.Limit(a.rate.rps), a.rate.burst)}
 			c = clients[ip]
 		}
 		c.lastSeen = time.Now()
