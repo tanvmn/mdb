@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"runtime/debug"
 	"slices"
@@ -55,7 +56,7 @@ func (a *app) logRequest(next http.Handler) http.Handler {
 
 // rateLimit returns a handler that implements a rate limiting, which has a refill rate and a burst limit.
 func (a *app) rateLimit(next http.Handler) http.Handler {
-	if !a.rate.enable {
+	if !a.rate.enabled {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r)
 		})
@@ -98,6 +99,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 			a.tooManyRequests(w, r)
 			return
 		}
+		w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%v", math.Floor(c.lim.Tokens())))
 		mu.Unlock()
 
 		next.ServeHTTP(w, r)

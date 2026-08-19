@@ -46,9 +46,9 @@ type conf struct {
 		connMaxIdleTime time.Duration
 	}
 	rate struct {
-		rps    float64
-		burst  int
-		enable bool
+		rps     float64
+		burst   int
+		enabled bool
 	}
 }
 
@@ -74,7 +74,7 @@ func newApp() *app {
 
 	flag.Float64Var(&a.rate.rps, "ratelimit-rps", 2, "Rate limit's max requests per second")
 	flag.IntVar(&a.rate.burst, "ratelimit-burst", 4, "Rate limit's max burst of requests")
-	flag.BoolVar(&a.rate.enable, "ratelimit-enable", true, "Enable rate limit")
+	flag.BoolVar(&a.rate.enabled, "ratelimit-enabled", true, "Enable rate limit")
 
 	flag.Parse()
 

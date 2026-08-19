@@ -71,7 +71,7 @@ func (a *app) postMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.movie(w, r, m)
+	a.created(w, r, wrap{"movie": m})
 }
 
 func (a *app) patchMovieHandler(w http.ResponseWriter, r *http.Request) {

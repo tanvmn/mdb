@@ -24,11 +24,13 @@ type dester interface {
 
 type Repo struct {
 	Movies MovieRepo
+	Users  UserRepo
 }
 
 func NewRepo(db *sql.DB) *Repo {
 	return &Repo{
 		Movies: MovieRepo{db},
+		Users:  UserRepo{db},
 	}
 }
 

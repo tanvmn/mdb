@@ -13,13 +13,14 @@ import (
 const (
 	MinMovieYear = 1888
 
+	selectMovies         = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	selectCountAndMovies = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
+	// updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 "
+	returningMovie = " returning id, created_at, title, year, runtime, genres, version "
+
 	// direction to maybe follow: a where clause which doesn't need to be built dynamically
 	// by making bool expressions of each input to either be evaluated or if not provided, be evaluated true.
-	selectMovies             = "select m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
-	selectCountAndMovies     = "select count(*) over(), m.id, m.created_at, m.title, m.year, m.runtime, m.genres, m.version from movies as m "
-	updateMoviesWhereVersion = "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 "
-	returningMovie           = " returning id, created_at, title, year, runtime, genres, version "
-
+	//
 	// From user perspective: find me movies whose titles contain everything in title part of my input.
 	// to_tsvector splits its input into lexemes.
 	// plainto_tsquery converts its input to a format that postgres understands.
@@ -94,9 +95,7 @@ func (r *MovieRepo) queryMovie(query string, args []any, m *Movie) error {
 }
 
 func (r *MovieRepo) Add(m *Movie) error {
-	q := `insert into movies (title, year, runtime, genres) values ($1,$2,$3,$4)
-	returning id, created_at, title, year, runtime, genres, version
-	`
+	q := "insert into movies (title, year, runtime, genres) values ($1,$2,$3,$4) " + returningMovie
 	// pq.Array adapts a Go value to a value that postgres understands.
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres)}
 
@@ -110,14 +109,14 @@ func (r *MovieRepo) Get(id int64) (*Movie, error) {
 
 	q := selectMovies + " where id=$1"
 	args := []any{id}
-	m := new(Movie)
+	m := &Movie{}
 	err := r.queryMovie(q, args, m)
 
 	return m, err
 }
 
 func (r *MovieRepo) Set(m *Movie) error {
-	q := updateMoviesWhereVersion + " and id=$6 " + returningMovie
+	q := "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 and id=$6 " + returningMovie
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.Version, m.ID}
 
 	if err := r.queryMovie(q, args, m); err != nil {

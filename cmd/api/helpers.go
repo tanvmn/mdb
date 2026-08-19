@@ -51,6 +51,11 @@ func (a *app) ok(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusOK, data)
 }
 
+// created calls a.json with status 201.
+func (a *app) created(w http.ResponseWriter, r *http.Request, data any) {
+	a.json(w, r, http.StatusCreated, data)
+}
+
 // succeeded calls a.json with status 200 and wrap{"message":"succeeded"} as data.
 func (a *app) succeeded(w http.ResponseWriter, r *http.Request) {
 	a.ok(w, r, wrap{"message": "succeeded"})
