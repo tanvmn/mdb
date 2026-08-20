@@ -23,12 +23,8 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	v.Validate(i.Name != nil, "name", "must be provided")
 	v.Validate(i.Email != nil, "email", "must be provided")
 	v.Validate(i.Password != nil, "password", "must be provided")
-	if !v.Valid() {
-		a.unprocessableEntity(w, r, v.Errors)
-		return
-	}
-	data.ValidatePassword(v, *i.Password)
-	if !v.Valid() {
+
+	if data.ValidatePassword(v, *i.Password); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
 	}
@@ -42,11 +38,11 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverErr(w, r, err)
 		return
 	}
-
 	if data.ValidateUser(v, u); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
 	}
+
 	if err := a.repo.Users.Add(u); err != nil {
 		if errors.Is(err, data.ErrDuplicateEmail) {
 			v.AddErr("email", "already used, try another")
