@@ -43,7 +43,7 @@ func New(host string, port int, username, password, sender string) (*Mailer, err
 
 // Send renders content of templateFile with data, and sends the result as email to recipient address.
 func (m *Mailer) Send(recipient, templateFile string, data any) error {
-	// create a *text/template.Template value to parse and contain temlates's content defined in templateFile from an embed.FS.
+	// create a *text/template.Template value to parse and contain templates's content defined in templateFile from an embed.FS.
 	txtTmpl, err := tt.New("").ParseFS(templateFS, filepath.Join("templates", templateFile))
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func (m *Mailer) Send(recipient, templateFile string, data any) error {
 		return err
 	}
 
-	// create a *html/template.Template value to parse and contain temlates's content defined in templateFile from an embed.FS.
+	// create a *html/template.Template value to parse and contain templates's content defined in templateFile from an embed.FS.
 	htmlTmpl, err := ht.New("").ParseFS(templateFS, filepath.Join("templates", templateFile))
 	if err != nil {
 		return err
