@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/lib/pq"
 	"github.com/tanvmn/mdb/internal/data"
 	"github.com/tanvmn/mdb/internal/mailer"
+
+	_ "github.com/lib/pq"
 )
 
 // version will later be generated at build time.
