@@ -33,7 +33,7 @@ func (a *app) serve() error {
 
 	shutdownErr := make(chan error)
 
-	go func() {
+	a.godo(func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT) // seems to block until receiving sig.
 
@@ -41,8 +41,16 @@ func (a *app) serve() error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		shutdownErr <- srv.Shutdown(ctx)
-	}()
+		if err := srv.Shutdown(ctx); err != nil {
+			shutdownErr <- err
+		}
+
+		// wait for other goroutines here instead of after <-shutdownErr cause
+		// if srv.Shutdown(ctx) returns a non-nil error, waiting still continues until main() calls os.Exit(1).
+		a.log.Info("completing background goroutines", "addr", srv.Addr)
+		a.wg.Wait()
+		shutdownErr <- nil
+	})
 
 	a.log.Info("listenning", "addr", srv.Addr, "env", a.env)
 
@@ -54,9 +62,6 @@ func (a *app) serve() error {
 	if err := <-shutdownErr; err != nil {
 		return err
 	}
-
-	a.log.Info("completing background goroutines", "addr", srv.Addr)
-	a.wg.Wait()
 
 	a.log.Info("server stopped", "addr", srv.Addr)
 
