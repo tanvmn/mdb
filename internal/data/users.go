@@ -75,7 +75,7 @@ func ValidateEmail(v *validator.Validator, email string) {
 	v.Validate(validator.Matches(email, validator.EmailRX), "email", "invalid format")
 }
 
-// ValidatePassword validates if password's length is between 8 and 72 bytes.
+// ValidatePassword validates if plaintext's length is between 8 and 72 bytes.
 func ValidatePassword(v *validator.Validator, plaintext string) {
 	l := len(plaintext)
 	v.Validate(l >= 8, "password", "must be at least 8 bytes")

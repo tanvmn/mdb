@@ -23,7 +23,6 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	v.Validate(i.Name != nil, "name", "must be provided")
 	v.Validate(i.Email != nil, "email", "must be provided")
 	v.Validate(i.Password != nil, "password", "must be provided")
-
 	if data.ValidatePassword(v, *i.Password); !v.Valid() {
 		a.unprocessableEntity(w, r, v.Errors)
 		return
@@ -53,5 +52,12 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.created(w, r, wrap{"user": u})
+	a.wgo(func() {
+		if err := a.mail.Send(u.Email, "user_welcome.tmpl.html", u); err != nil {
+			a.logErr(r, err)
+		}
+	})
+
+	// this means the request has been accepted and still being processed.
+	a.accepted(w, r, wrap{"user": u})
 }

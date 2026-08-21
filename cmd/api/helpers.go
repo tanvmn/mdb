@@ -56,6 +56,11 @@ func (a *app) created(w http.ResponseWriter, r *http.Request, data any) {
 	a.json(w, r, http.StatusCreated, data)
 }
 
+// accepted calls a.json with status 202.
+func (a *app) accepted(w http.ResponseWriter, r *http.Request, data any) {
+	a.json(w, r, http.StatusAccepted, data)
+}
+
 // succeeded calls a.json with status 200 and wrap{"message":"succeeded"} as data.
 func (a *app) succeeded(w http.ResponseWriter, r *http.Request) {
 	a.ok(w, r, wrap{"message": "succeeded"})
@@ -141,4 +146,30 @@ func parseInt(query url.Values, key string, defaultVal int, v *validator.Validat
 	}
 
 	return i
+}
+
+// do defers recovering a potential panic before calling f().
+func (a *app) do(f func()) {
+	defer func() {
+		if err := recover(); err != nil {
+			a.log.Error(fmt.Sprintf("%v", err))
+		}
+	}()
+
+	f()
+}
+
+// godo uses a new goroutine to call a.do(f).
+func (a *app) godo(f func()) {
+	go a.do(f)
+}
+
+// job returns a func() that calls a.do(f).
+func (a *app) job(f func()) func() {
+	return func() { a.do(f) }
+}
+
+// wgo increments a.wg by 1, then uses a new goroutine to: defer a.wg.Done() before calling a.do(f).
+func (a *app) wgo(f func()) {
+	a.wg.Go(a.job(f))
 }

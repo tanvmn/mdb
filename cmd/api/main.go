@@ -6,22 +6,24 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/tanvmn/mdb/internal/data"
+	"github.com/tanvmn/mdb/internal/mailer"
 )
 
 // version will later be generated at build time.
 const version = "1.0.0"
 
 func main() {
-	a := newApp()
+	a, err := newApp()
+	a.handle(err)
 
 	db, err := openDB(&a.conf)
 	a.handle(err)
 	defer db.Close()
-
 	a.repo = data.NewRepo(db)
 
 	a.handle(a.serve())
@@ -50,6 +52,13 @@ type conf struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // app has dependencies for this service.
@@ -57,9 +66,11 @@ type app struct {
 	conf
 	log  *slog.Logger
 	repo *data.Repo
+	mail *mailer.Mailer
+	wg   sync.WaitGroup
 }
 
-func newApp() *app {
+func newApp() (*app, error) {
 	a := &app{
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
@@ -72,13 +83,25 @@ func newApp() *app {
 	flag.IntVar(&a.db.maxIdleConns, "db-max-idle-conns", 25, "Max idle connections to PostgreSQL")
 	flag.DurationVar(&a.db.connMaxIdleTime, "db-conn-max-idle-time", 15*time.Minute, "Max idle time of connections to PostgreSQL")
 
-	flag.Float64Var(&a.rate.rps, "ratelimit-rps", 2, "Rate limit's max requests per second")
-	flag.IntVar(&a.rate.burst, "ratelimit-burst", 4, "Rate limit's max burst of requests")
-	flag.BoolVar(&a.rate.enabled, "ratelimit-enabled", true, "Enable rate limit")
+	flag.StringVar(&a.smtp.host, "smtp-host", "smtp.gmail.com", "SMTP server's host")
+	flag.IntVar(&a.smtp.port, "smtp-port", 587, "SMTP server's port")
+	flag.StringVar(&a.smtp.username, "smtp-username", "", "SMTP client's login username")
+	flag.StringVar(&a.smtp.password, "smtp-password", "", "SMTP client's login password")
+	flag.StringVar(&a.smtp.sender, "smtp-sender", "mdb <no-reply@not.available.yet>", "SMTP sender")
+
+	flag.Float64Var(&a.rate.rps, "rate-rps", 2, "Rate limit's max requests per second")
+	flag.IntVar(&a.rate.burst, "rate-burst", 4, "Rate limit's max burst of requests")
+	flag.BoolVar(&a.rate.enabled, "rate-enabled", true, "Enable rate limit")
 
 	flag.Parse()
 
-	return a
+	m, err := mailer.New(a.smtp.host, a.smtp.port, a.smtp.username, a.smtp.password, a.smtp.sender)
+	if err != nil {
+		return nil, err
+	}
+	a.mail = m
+
+	return a, nil
 }
 
 // openDB establishes a connection pool and pings db.

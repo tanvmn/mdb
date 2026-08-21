@@ -23,14 +23,16 @@ func (a *app) serve() error {
 	}
 
 	// graceful shutdown flow:
-	// - create a new goroutine to wait for one of syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT
-	// - when signal is received, call srv.Shutdown(30s timeout context) and send the potential error to a chan error
-	// - with the main goroutine, after calling srv.Shutdown:
-	//	if srv.ListenAndServe() doesn't return http.ErrServerClosed, then srv stops listenning UNSUCCESSFULLY; so return err
-	//	if srv.ListenAndServe() returns http.ErrServerClosed from srv.Shutdown, then srv stops listenning successfully, and move to the step below
-	// - if this step is reached, then receive the potential error from srv.Shutdown. If err != nil, return err, else server's graceful shutdown is successful.
+	// - create a new goroutine to wait for one of signals: syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT
+	// - when signal is received, call srv.Shutdown(30s timeout context) and send the potential error to a chan error (let's call shutdownErr)
+	// - with the request's goroutine, after srv.Shutdown's called in other goroutine:
+	//	-- if srv.ListenAndServe() doesn't return http.ErrServerClosed, then srv stops listenning UNSUCCESSFULLY
+	//		--- return err
+	//	if srv.ListenAndServe() returns http.ErrServerClosed from srv.Shutdown(), then srv stops listenning SUCCESSFULLY
+	// 		--- receive the potential error from srv.Shutdown() via a chan shutdownErr. If err != nil, return err, else server's graceful shutdown is successful.
 
 	shutdownErr := make(chan error)
+
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT) // seems to block until receiving sig.
@@ -44,14 +46,19 @@ func (a *app) serve() error {
 
 	a.log.Info("listenning", "addr", srv.Addr, "env", a.env)
 
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		return err
+	if err := srv.ListenAndServe(); err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
 	}
 	if err := <-shutdownErr; err != nil {
 		return err
 	}
 
-	a.log.Info("server shutdown successful", "addr", srv.Addr)
+	a.log.Info("completing background goroutines", "addr", srv.Addr)
+	a.wg.Wait()
+
+	a.log.Info("server stopped", "addr", srv.Addr)
 
 	return nil
 }

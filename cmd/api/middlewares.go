@@ -70,8 +70,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 	clients := make(map[string]*client)
 
 	// Every minute, delete any client that hasn't visit for more than 3min.
-	// Remember, later, to wrap this in a helper that handles panic.
-	go func() {
+	a.godo(func() {
 		for {
 			time.Sleep(time.Minute)
 			mu.Lock()
@@ -82,7 +81,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 			}
 			mu.Unlock()
 		}
-	}()
+	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := realip.FromRequest(r)
