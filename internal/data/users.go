@@ -1,6 +1,7 @@
 package data
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"strings"
@@ -15,7 +16,11 @@ const (
 	returningUser = " returning id, created_at, name, email, password_hash, activated, version "
 )
 
-var ErrDuplicateEmail = errors.New("data: duplicate email")
+var (
+	ErrDuplicateEmail     = errors.New("data: duplicate email")
+	ErrMismatchedPassword = errors.New("data: mismatched password")
+	ErrExpiredToken       = errors.New("data: expired token")
+)
 
 type password struct {
 	plaintext *string
@@ -46,6 +51,19 @@ func (p *password) Matches(plaintext string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Matches returns nil if plaintext matches p.hash.
+// Matches2 could return ErrMismatchedPassword or another non-nil error.
+func (p *password) Matches2(plaintext string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(p.hash), []byte(plaintext)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrMismatchedPassword
+		}
+		return err
+	}
+
+	return nil
 }
 
 type User struct {
@@ -99,8 +117,8 @@ type UserRepo struct {
 	db *sql.DB
 }
 
-func (r *UserRepo) queryUser(query string, args []any, u *User) error {
-	return queryRow(r.db, query, args, u.dest())
+func (r *UserRepo) queryUserAndScan(query string, args []any, u *User) error {
+	return queryRowAndScan(r.db, query, args, u.dest())
 }
 
 func emailIsDuplicate(err error) bool {
@@ -113,7 +131,7 @@ func (r *UserRepo) Add(u *User) error {
 	q := "insert into users (name, email, password_hash, activated) values ($1,$2,$3,$4) " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated}
 
-	if err := r.queryUser(q, args, u); err != nil {
+	if err := r.queryUserAndScan(q, args, u); err != nil {
 		if emailIsDuplicate(err) {
 			return ErrDuplicateEmail
 		}
@@ -127,7 +145,7 @@ func (r *UserRepo) GetByEmail(email string) (*User, error) {
 	q := selectUsers + " where email=$1 "
 	args := []any{email}
 	u := &User{}
-	err := r.queryUser(q, args, u)
+	err := r.queryUserAndScan(q, args, u)
 
 	return u, err
 }
@@ -136,7 +154,7 @@ func (r *UserRepo) Set(u *User) error {
 	q := "update users set name=$1, email=$2, password_hash=$3, activated=$4, version=version+1 where version=$5 and id=$6 " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated, u.Version, u.ID}
 
-	if err := r.queryUser(q, args, u); err != nil {
+	if err := r.queryUserAndScan(q, args, u); err != nil {
 		switch {
 		case errors.Is(err, ErrRecordNotFound):
 			return ErrEditConflict
@@ -148,4 +166,22 @@ func (r *UserRepo) Set(u *User) error {
 	}
 
 	return nil
+}
+
+// GetForToken returns an user corresponded with a token's scope and plaintext.
+func (r *UserRepo) GetForToken(scope, plaintext string) (*User, error) {
+	q := selectUsers + `
+		inner join tokens as t
+		on t.user_id = u.id
+		where t.hash=$1
+		and t.scope=$2
+		and t.expiry > $3
+	`
+	hash := sha256.Sum256([]byte(plaintext))
+	// note the [:], cause pq doesn't support converting Go array.
+	args := []any{hash[:], scope, time.Now()}
+	u := &User{}
+	err := r.queryUserAndScan(q, args, u)
+
+	return u, err
 }

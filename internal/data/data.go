@@ -16,7 +16,8 @@ var (
 	ErrEditConflict = errors.New("data: edit conflict")
 )
 
-// dester represents a pointer receiver of a struct, whose dest method returns a slice of pointers to each of the struct's fields.
+// dester represents a pointer to a struct.
+// dest() returns a slice of pointers to each of the struct's fields.
 // This is for scanning db query result into struct fields.
 type dester interface {
 	dest() []any
@@ -24,20 +25,22 @@ type dester interface {
 
 type Repo struct {
 	Movies MovieRepo
+	Tokens TokenRepo
 	Users  UserRepo
 }
 
 func NewRepo(db *sql.DB) *Repo {
 	return &Repo{
 		Movies: MovieRepo{db},
+		Tokens: TokenRepo{db},
 		Users:  UserRepo{db},
 	}
 }
 
-// queryRow queries a row and scan each row's column to each of dest.
-// queryRow times out after timeoutDuration (const).
+// queryRowAndScan queries a row and scan each row's column to each of dest.
+// queryRowAndScan times out after timeoutDuration (const).
 // ErrRecordNotFound is returned when db returns no rows.
-func queryRow(db *sql.DB, query string, args []any, dest []any) error {
+func queryRowAndScan(db *sql.DB, query string, args []any, dest []any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	if err := db.QueryRowContext(ctx, query, args...).Scan(dest...); err != nil {
@@ -50,12 +53,18 @@ func queryRow(db *sql.DB, query string, args []any, dest []any) error {
 	return nil
 }
 
-// rowsAffected executes query and returned the rows affected.
-// rowsAffected times out after timeoutDuration (const).
-func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
+// result executes query and returns the result.
+// result times out after timeoutDuration (const).
+func result(db *sql.DB, query string, args []any) (sql.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
-	result, err := db.ExecContext(ctx, query, args...)
+
+	return db.ExecContext(ctx, query, args...)
+}
+
+// rowsAffected executes query and returned the rows affected.
+func rowsAffected(db *sql.DB, query string, args []any) (int64, error) {
+	result, err := result(db, query, args)
 	if err != nil {
 		return 0, err
 	}
@@ -63,22 +72,26 @@ func rowsAffected(db *sql.DB, query string, args ...any) (int64, error) {
 	return result.RowsAffected()
 }
 
-// query queries rows and returns them as []T.
-// T's argument must be a pointer type to enable mutating destinations returned from T's dest method.
+// queryAndScan queries rows and returns them as []T.
+// T's argument must be a pointer to struct to enable mutating.
 // newT must return a non-nil pointer.
 //
 //	Ex: if T is *Movie, then newT is func() *Movie, and newT() != nil.
 //
 // total is the number of rows before pagination.
-// query times out after timeoutDuration (const).
-func query[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
+// queryAndScan times out after timeoutDuration (const).
+func queryAndScan[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err2 := rows.Close(); err2 != nil && err == nil {
+			err = err2
+		}
+	}()
 
 	ts = []T{}
 	for rows.Next() {

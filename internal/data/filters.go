@@ -66,11 +66,10 @@ func (f *Filter) offset() int {
 
 // Metadata contains metadata about the returned records.
 type Metadata struct {
-	CurrentPage  int      `json:"currentPage,omitzero"`
-	PageSize     int      `json:"pageSize,omitzero"`
-	LastPage     int      `json:"lastPage,omitzero"`
-	TotalRecords int      `json:"totalRecords,omitzero"`
-	Parameters   []string `json:"parameters,omitempty"`
+	CurrentPage  int `json:"currentPage,omitzero"`
+	PageSize     int `json:"pageSize,omitzero"`
+	LastPage     int `json:"lastPage,omitzero"`
+	TotalRecords int `json:"totalRecords,omitzero"`
 }
 
 func metadata(totalRecords, page, pageSize int) Metadata {
@@ -83,6 +82,5 @@ func metadata(totalRecords, page, pageSize int) Metadata {
 		PageSize:     pageSize,
 		LastPage:     (totalRecords + pageSize - 1) / pageSize,
 		TotalRecords: totalRecords,
-		Parameters:   []string{"page", "page_size"},
 	}
 }
