@@ -170,10 +170,15 @@ func (r *UserRepo) Set(u *User) error {
 
 // GetForToken returns an user associated with an existing, unexpired token with scope.
 func (r *UserRepo) GetForToken(scope, plaintext string) (*User, error) {
+	// postgres doesn't compute t.hash=$1 in constant time,
+	// so attacker can send thousands of requests, track the response times
+	// and analyze the differences to get the estimate of the hash value.
+	// But even if the hash value is found, attackers still have to guess the plaintext token
+	// in order to use the API, and that's is infeasible with current tech.
 	q := selectUsers + `
 		inner join tokens as t
 		on t.user_id = u.id
-		where t.hash=$1
+		where t.hash=$1 --<-- vulnerable
 		and t.scope=$2
 		and t.expiry > $3
 	`
