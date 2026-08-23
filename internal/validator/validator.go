@@ -25,7 +25,7 @@ func (v *Validator) AddErr(key, message string) {
 	}
 }
 
-// Validate calls v.AddErr if ok != true.
+// Validate calls v.AddErr(key,message) if !ok.
 func (v *Validator) Validate(ok bool, key, message string) {
 	if !ok {
 		v.AddErr(key, message)

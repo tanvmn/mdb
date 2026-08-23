@@ -168,7 +168,7 @@ func (r *UserRepo) Set(u *User) error {
 	return nil
 }
 
-// GetForToken returns an user corresponded with a token's scope and plaintext.
+// GetForToken returns an user associated with an existing, unexpired token with scope.
 func (r *UserRepo) GetForToken(scope, plaintext string) (*User, error) {
 	q := selectUsers + `
 		inner join tokens as t

@@ -41,15 +41,7 @@ func (a *app) serve() error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		if err := srv.Shutdown(ctx); err != nil {
-			shutdownErr <- err
-		}
-
-		// wait for other goroutines here instead of after <-shutdownErr cause
-		// if srv.Shutdown(ctx) returns a non-nil error, waiting still continues until main() calls os.Exit(1).
-		a.log.Info("completing background goroutines", "addr", srv.Addr)
-		a.wg.Wait()
-		shutdownErr <- nil
+		shutdownErr <- srv.Shutdown(ctx)
 	})
 
 	a.log.Info("listenning", "addr", srv.Addr, "env", a.env)
@@ -62,6 +54,9 @@ func (a *app) serve() error {
 	if err := <-shutdownErr; err != nil {
 		return err
 	}
+
+	a.log.Info("waiting for other goroutines", "addr", srv.Addr)
+	a.wg.Wait()
 
 	a.log.Info("server stopped", "addr", srv.Addr)
 

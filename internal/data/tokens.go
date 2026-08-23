@@ -12,8 +12,8 @@ import (
 const (
 	ScopeActivation = "activation"
 
-	columnsFromTokens = " t.hash, t.user_id, t.expiry, t.scope from tokens as t "
-	selectTokens      = "select " + columnsFromTokens
+	columnsOfTokensAsT = " t.hash, t.user_id, t.expiry, t.scope "
+	selectTokens       = "select " + columnsOfTokensAsT + " from tokens as t "
 )
 
 type Token struct {
@@ -47,6 +47,7 @@ func token(userID int64, lifetime time.Duration, scope string) *Token {
 	return t
 }
 
+// ValidateToken validates if plaintext is exactly 26 bytes long.
 func ValidateToken(v *validator.Validator, plaintext string) {
 	v.Validate(len(plaintext) == 26, "token", "must be 26 bytes long")
 }

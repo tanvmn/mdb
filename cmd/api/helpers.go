@@ -67,6 +67,7 @@ func (a *app) succeeded(w http.ResponseWriter, r *http.Request) {
 }
 
 // decodeJSON decodes a single JSON value from rc into the value pointed to by dst.
+// dst must be a non-nil pointer.
 func decodeJSON(w http.ResponseWriter, rc io.ReadCloser, dst any) error {
 	rc = http.MaxBytesReader(w, rc, maxJSONSize)
 	dec := json.NewDecoder(rc)
@@ -148,7 +149,7 @@ func parseInt(query url.Values, key string, defaultVal int, v *validator.Validat
 	return i
 }
 
-// do defers recovering a potential panic before calling f().
+// do defers recovering a potential panic, then calls f().
 func (a *app) do(f func()) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -159,17 +160,12 @@ func (a *app) do(f func()) {
 	f()
 }
 
-// godo uses a new goroutine to call a.do(f).
+// godo starts a new goroutine to call a.do(f).
 func (a *app) godo(f func()) {
 	go a.do(f)
 }
 
-// job returns a func() that calls a.do(f).
-func (a *app) job(f func()) func() {
-	return func() { a.do(f) }
-}
-
-// wgo increments a.wg by 1, then uses a new goroutine to: defer a.wg.Done() before calling a.do(f).
+// wgo increments a.wg by 1, then starts a new goroutine to: defer a.wg.Done(), then calls a.do(f).
 func (a *app) wgo(f func()) {
-	a.wg.Go(a.job(f))
+	a.wg.Go(func() { a.do(f) })
 }
