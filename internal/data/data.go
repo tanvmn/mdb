@@ -102,9 +102,6 @@ func queryAndScan[T dester](db *sql.DB, query string, args []any, newT func() T)
 		}
 		ts = append(ts, t)
 	}
-	if err = rows.Err(); err != nil {
-		return nil, 0, err
-	}
 
-	return ts, total, nil
+	return ts, total, rows.Err()
 }
