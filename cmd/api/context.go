@@ -12,13 +12,15 @@ type contextKey string
 
 const userContextKey = contextKey("user")
 
+// contextSetUser sets a user in r.Context() and returns a new request whose context contains a user.
 func (a *app) contextSetUser(r *http.Request, u *data.User) *http.Request {
 	ctx := context.WithValue(r.Context(), userContextKey, u)
 
 	return r.WithContext(ctx)
 }
 
-// contextGetUser panics if user isn't found.
+// contextGetUser is only called when a user is stored in r.Context(),
+// so panics if no user is found.
 func (a *app) contextGetUser(r *http.Request) *data.User {
 	u, ok := r.Context().Value(userContextKey).(*data.User)
 	if !ok {

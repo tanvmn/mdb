@@ -63,6 +63,11 @@ func (a *app) unauthorized(w http.ResponseWriter, r *http.Request, message any) 
 	a.err(w, r, http.StatusUnauthorized, message)
 }
 
+// forbidden calls a.err with status 403.
+func (a *app) forbidden(w http.ResponseWriter, r *http.Request, message any) {
+	a.err(w, r, http.StatusForbidden, message)
+}
+
 // invalidCredentials calls a.unauthorized with "invalid authentication credentials" as message.
 func (a *app) invalidCredentials(w http.ResponseWriter, r *http.Request) {
 	a.unauthorized(w, r, "invalid authentication credentials")

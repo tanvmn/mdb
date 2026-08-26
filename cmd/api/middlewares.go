@@ -52,7 +52,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 
 func (a *app) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI())
+		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI(), "authenticated", !a.contextGetUser(r).IsAnonymous())
 
 		next.ServeHTTP(w, r)
 	})
@@ -143,6 +143,23 @@ func (a *app) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		r = a.contextSetUser(r, u)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// validateActivated only calls next if there is an authenticated and activated user.
+func (a *app) validateActivated(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := a.contextGetUser(r)
+		if u.IsAnonymous() {
+			a.unauthorized(w, r, "resource requires authentication")
+			return
+		}
+		if !u.Activated {
+			a.forbidden(w, r, "resource requires user to be activated")
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})
