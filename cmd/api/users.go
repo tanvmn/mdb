@@ -99,7 +99,7 @@ func (a *app) putUserActivatedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if no existing and unexpired token, then no user.
-	u, err := a.repo.Users.GetForToken(data.ScopeActivation, *i.Token)
+	u, err := a.repo.Users.GetByToken(data.ScopeActivation, *i.Token)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			v.AddErr("token", "invalid or expired activation token")

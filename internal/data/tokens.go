@@ -10,18 +10,19 @@ import (
 )
 
 const (
-	ScopeActivation = "activation"
+	ScopeActivation     = "activation"
+	ScopeAuthentication = "authentication"
 
 	columnsOfTokensAsT = " t.hash, t.user_id, t.expiry, t.scope "
 	selectTokens       = "select " + columnsOfTokensAsT + " from tokens as t "
 )
 
 type Token struct {
-	Plaintext string // 128-bit randomness, base32 encoded
-	Hash      []byte // SHA256 checksum
-	UserID    int64
-	Expiry    time.Time
-	Scope     string
+	Plaintext string    `json:"token"` // 128-bit randomness, base32 encoded
+	Hash      []byte    `json:"-"`     // SHA256 checksum
+	UserID    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 func (t *Token) dest() []any {

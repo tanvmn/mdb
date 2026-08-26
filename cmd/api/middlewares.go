@@ -1,14 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
 	"runtime/debug"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/tanvmn/mdb/internal/data"
+	"github.com/tanvmn/mdb/internal/validator"
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 )
@@ -100,6 +104,45 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 		}
 		w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%v", math.Floor(c.lim.Tokens())))
 		mu.Unlock()
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// authenticate sets "Vary: Authorization", then authenticates based on "Authorization: Bearer <token>".
+func (a *app) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Inform clients who cache, that a response may vary based on the value of Authorization header in a request.
+		w.Header().Set("Vary", "Authorization")
+
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			r = a.contextSetUser(r, data.AnonymousUser)
+			next.ServeHTTP(w, r)
+			return
+		}
+		parts := strings.Split(auth, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			a.invalidAuthenToken(w, r)
+			return
+		}
+		token := parts[1]
+		v := validator.New()
+		if data.ValidateToken(v, token); !v.Valid() {
+			a.invalidAuthenToken(w, r)
+			return
+		}
+
+		u, err := a.repo.Users.GetByToken(data.ScopeAuthentication, token)
+		if err != nil {
+			if errors.Is(err, data.ErrRecordNotFound) {
+				a.invalidAuthenToken(w, r)
+			} else {
+				a.serverErr(w, r, err)
+			}
+			return
+		}
+		r = a.contextSetUser(r, u)
 
 		next.ServeHTTP(w, r)
 	})

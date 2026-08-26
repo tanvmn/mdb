@@ -147,3 +147,11 @@ Distinguishing version (state) of the a record
 	returning version;
 
 ----------------------------------------------------------------------------------------------------------------
+
+SECURITY
+
+Activating user, Authentication
+
+- Make sure to client to communicating over HTTPS.
+
+----------------------------------------------------------------------------------------------------------------

@@ -57,3 +57,20 @@ func (a *app) editConflict(w http.ResponseWriter, r *http.Request) {
 func (a *app) tooManyRequests(w http.ResponseWriter, r *http.Request) {
 	a.err(w, r, http.StatusTooManyRequests, "exceeded rate limit, retry later")
 }
+
+// unauthorized calls a.err with status 401.
+func (a *app) unauthorized(w http.ResponseWriter, r *http.Request, message any) {
+	a.err(w, r, http.StatusUnauthorized, message)
+}
+
+// invalidCredentials calls a.unauthorized with "invalid authentication credentials" as message.
+func (a *app) invalidCredentials(w http.ResponseWriter, r *http.Request) {
+	a.unauthorized(w, r, "invalid authentication credentials")
+}
+
+// invalidAuthenToken set "WWW-Authenticate: Bear", then calls a.unauthorized with "invalid or missing authentication token" as message.
+func (a *app) invalidAuthenToken(w http.ResponseWriter, r *http.Request) {
+	// inform clients that server expects authentications using Bearer token.
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	a.unauthorized(w, r, "invalid or missing authentication token")
+}

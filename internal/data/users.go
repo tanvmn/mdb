@@ -19,7 +19,6 @@ const (
 var (
 	ErrDuplicateEmail     = errors.New("data: duplicate email")
 	ErrMismatchedPassword = errors.New("data: mismatched password")
-	ErrExpiredToken       = errors.New("data: expired token")
 )
 
 type password struct {
@@ -39,23 +38,9 @@ func (p *password) Set(plaintext string) error {
 	return nil
 }
 
-// Matches returns true if plaintext's bcrypt hash matches p.hash.
-// If an error occurs just because plaintext doesn't match p.hash, Matches returns false, nil.
-// If an error occured for any other reasons, Matches returns false, err.
-func (p *password) Matches(plaintext string) (bool, error) {
-	if err := bcrypt.CompareHashAndPassword([]byte(p.hash), []byte(plaintext)); err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
-}
-
 // Matches returns nil if plaintext matches p.hash.
-// Matches2 could return ErrMismatchedPassword or another non-nil error.
-func (p *password) Matches2(plaintext string) error {
+// Matches could return ErrMismatchedPassword or another error occured while comparing plaintext to its hash.
+func (p *password) Matches(plaintext string) error {
 	if err := bcrypt.CompareHashAndPassword([]byte(p.hash), []byte(plaintext)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return ErrMismatchedPassword
@@ -74,6 +59,12 @@ type User struct {
 	Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
+}
+
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 func (u *User) dest() []any {
@@ -168,8 +159,8 @@ func (r *UserRepo) Set(u *User) error {
 	return nil
 }
 
-// GetForToken returns an user associated with an existing, unexpired token with scope.
-func (r *UserRepo) GetForToken(scope, plaintext string) (*User, error) {
+// GetByToken returns an user associated with an existing, unexpired token with scope.
+func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 	// postgres doesn't compute t.hash=$1 in constant time,
 	// so attacker can send thousands of requests, track the response times
 	// and analyze the differences to get the estimate of the hash value.
