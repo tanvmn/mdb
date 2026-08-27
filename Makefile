@@ -2,7 +2,7 @@ include .envrc
 
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api/ -db-dsn=${DB_DSN} -smtp-username=${GMAIL_USERNAME} -smtp-password=${GMAIL_APP_PASSWD}
+	@go run ./cmd/api/ -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD}
 
 .PHONY: help
 help:
