@@ -27,6 +27,7 @@ type Repo struct {
 	Movies MovieRepo
 	Tokens TokenRepo
 	Users  UserRepo
+	Perms  PermRepo
 }
 
 func NewRepo(db *sql.DB) *Repo {
@@ -34,13 +35,14 @@ func NewRepo(db *sql.DB) *Repo {
 		Movies: MovieRepo{db},
 		Tokens: TokenRepo{db},
 		Users:  UserRepo{db},
+		Perms:  PermRepo{db},
 	}
 }
 
-// queryRowAndScan queries a row and scan each row's column to each of dest.
-// queryRowAndScan times out after timeoutDuration (const).
+// queryRow queries a row and scan each row's column to each of dest.
+// queryRow times out after timeoutDuration (const).
 // ErrRecordNotFound is returned when db returns no rows.
-func queryRowAndScan(db *sql.DB, query string, args []any, dest []any) error {
+func queryRow(db *sql.DB, query string, args []any, dest []any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	if err := db.QueryRowContext(ctx, query, args...).Scan(dest...); err != nil {
@@ -72,15 +74,15 @@ func rowsAffected(db *sql.DB, query string, args []any) (int64, error) {
 	return result.RowsAffected()
 }
 
-// queryAndScan queries rows and returns them as []T.
+// query queries rows and returns them as []T.
 // T's argument must be a pointer to struct to enable mutating.
 // newT must return a non-nil pointer.
 //
 //	Ex: if T is *Movie, then newT is func() *Movie, and newT() != nil.
 //
 // total is the number of rows before pagination.
-// queryAndScan times out after timeoutDuration (const).
-func queryAndScan[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
+// query times out after timeoutDuration (const).
+func query[T dester](db *sql.DB, query string, args []any, newT func() T) (ts []T, total int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, query, args...)

@@ -180,3 +180,22 @@ func (a *app) validateUserActivated(next http.HandlerFunc) http.HandlerFunc {
 
 	return a.validateUserAuthenticated(f)
 }
+
+func (a *app) authorize(code string, next http.HandlerFunc) http.HandlerFunc {
+	f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ps, err := a.repo.Perms.GetAllForUser(a.contextGetUser(r).ID)
+		if err != nil {
+			fmt.Println("get all perms error")
+			a.serverErr(w, r, err)
+			return
+		}
+		if !ps.Include(code) {
+			a.forbidden(w, r, "user doesn't have permission to access this resource")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+
+	return a.validateUserActivated(f)
+}

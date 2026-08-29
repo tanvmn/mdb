@@ -108,8 +108,8 @@ type UserRepo struct {
 	db *sql.DB
 }
 
-func (r *UserRepo) queryUserAndScan(query string, args []any, u *User) error {
-	return queryRowAndScan(r.db, query, args, u.dest())
+func (r *UserRepo) queryUser(query string, args []any, u *User) error {
+	return queryRow(r.db, query, args, u.dest())
 }
 
 func emailIsDuplicate(err error) bool {
@@ -122,7 +122,7 @@ func (r *UserRepo) Add(u *User) error {
 	q := "insert into users (name, email, password_hash, activated) values ($1,$2,$3,$4) " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated}
 
-	if err := r.queryUserAndScan(q, args, u); err != nil {
+	if err := r.queryUser(q, args, u); err != nil {
 		if emailIsDuplicate(err) {
 			return ErrDuplicateEmail
 		}
@@ -136,7 +136,7 @@ func (r *UserRepo) GetByEmail(email string) (*User, error) {
 	q := selectUsers + " where email=$1 "
 	args := []any{email}
 	u := &User{}
-	err := r.queryUserAndScan(q, args, u)
+	err := r.queryUser(q, args, u)
 
 	return u, err
 }
@@ -145,7 +145,7 @@ func (r *UserRepo) Set(u *User) error {
 	q := "update users set name=$1, email=$2, password_hash=$3, activated=$4, version=version+1 where version=$5 and id=$6 " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated, u.Version, u.ID}
 
-	if err := r.queryUserAndScan(q, args, u); err != nil {
+	if err := r.queryUser(q, args, u); err != nil {
 		switch {
 		case errors.Is(err, ErrRecordNotFound):
 			return ErrEditConflict
@@ -177,7 +177,7 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 	// note the [:], cause pq doesn't support converting Go array.
 	args := []any{hash[:], scope, time.Now()}
 	u := &User{}
-	err := r.queryUserAndScan(q, args, u)
+	err := r.queryUser(q, args, u)
 
 	return u, err
 }
