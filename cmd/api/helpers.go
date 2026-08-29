@@ -160,7 +160,7 @@ func (a *app) do(f func()) {
 	f()
 }
 
-// godo starts a new goroutine to call a.do(f).
+// godo starts a new goroutine to: defer recovering potential panic, then call f().
 func (a *app) godo(f func()) {
 	go a.do(f)
 }

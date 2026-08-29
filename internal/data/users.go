@@ -181,3 +181,29 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 
 	return u, err
 }
+
+var ErrUserNotHavePerm = errors.New("data: user doesn't have the permission")
+
+// HasPerm returns nil if user with id has perm,
+// returns ErrUserNotHavePerm if user doesn't,
+// else returns the error occured while computing.
+func (r *UserRepo) HasPerm(id int64, perm string) error {
+	q := `select exists (
+		select 1
+		from users_permissions as up
+		inner join users as u on u.id = up.user_id
+		inner join permissions as p on p.id = up.permission_id
+		where u.id=$1 and p.code=$2
+	)
+	`
+	args := []any{id, perm}
+	var has bool
+	if err := queryRow(r.db, q, args, []any{&has}); err != nil {
+		return err
+	}
+	if !has {
+		return ErrUserNotHavePerm
+	}
+
+	return nil
+}

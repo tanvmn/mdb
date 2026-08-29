@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	PermCodeMoviesRead  = "movies:read"
-	PermCodeMoviesWrite = "movies:write"
+	PermMoviesRead  = "movies:read"
+	PermMoviesWrite = "movies:write"
 )
 
 type Perm struct {
