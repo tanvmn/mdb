@@ -73,7 +73,7 @@ func (a *app) invalidCredentials(w http.ResponseWriter, r *http.Request) {
 	a.unauthorized(w, r, "invalid authentication credentials")
 }
 
-// invalidAuthenToken set "WWW-Authenticate: Bear", then calls a.unauthorized with "invalid or missing authentication token" as message.
+// invalidAuthenToken set "WWW-Authenticate: Bearer", then calls a.unauthorized with "invalid or missing authentication token" as message.
 func (a *app) invalidAuthenToken(w http.ResponseWriter, r *http.Request) {
 	// inform clients that server expects authentications using Bearer token.
 	w.Header().Set("WWW-Authenticate", "Bearer")

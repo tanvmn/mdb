@@ -56,6 +56,11 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := a.repo.Perms.AddForUser(u.ID, data.PermCodeMoviesRead); err != nil {
+		a.serverErr(w, r, err)
+		return
+	}
+
 	t, err := a.repo.Tokens.New(u.ID, tokenLifetime, data.ScopeActivation)
 	if err != nil {
 		a.serverErr(w, r, err)

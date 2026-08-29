@@ -185,7 +185,6 @@ func (a *app) authorize(code string, next http.HandlerFunc) http.HandlerFunc {
 	f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ps, err := a.repo.Perms.GetAllForUser(a.contextGetUser(r).ID)
 		if err != nil {
-			fmt.Println("get all perms error")
 			a.serverErr(w, r, err)
 			return
 		}
