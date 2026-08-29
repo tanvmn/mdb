@@ -19,8 +19,8 @@ func (a *app) contextSetUser(r *http.Request, u *data.User) *http.Request {
 	return r.WithContext(ctx)
 }
 
-// contextGetUser is only called when a user is stored in r.Context(),
-// so panics if no user is found.
+// contextGetUser returns either a existing *data.User or data.AnonymousUser,
+// so a panic occurs if no user is found.
 func (a *app) contextGetUser(r *http.Request) *data.User {
 	u, ok := r.Context().Value(userContextKey).(*data.User)
 	if !ok {

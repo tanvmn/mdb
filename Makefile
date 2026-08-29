@@ -17,3 +17,5 @@ migrate/down:
 	@migrate -path=./migrations/ -database=${DB_DSN} down
 migrate/goto:
 	@migrate -path=./migrations/ -database=${DB_DSN} goto ${V}
+migrate/force:
+	@migrate -path=./migrations/ -database=${DB_DSN} force ${V}

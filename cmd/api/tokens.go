@@ -9,7 +9,7 @@ import (
 	"github.com/tanvmn/mdb/internal/validator"
 )
 
-func (a *app) postAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (a *app) postAuthenTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var i struct {
 		Email    *string `json:"email"`
 		Password *string `json:"password"`
