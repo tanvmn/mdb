@@ -52,7 +52,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 
 func (a *app) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI(), "userID", a.contextGetUser(r).ID)
+		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI(), "userID", a.contextUser(r).ID)
 
 		next.ServeHTTP(w, r)
 	})
@@ -109,20 +109,20 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
-// authenticate sets "Vary: Authorization", then authenticates based on "Authorization: Bearer <token>".
+// authenticate sets "Vary: Authorization", then authenticates based on "Authorization: Bearer <plaintext token>".
 func (a *app) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Inform clients who cache, that a response may vary based on a request's Authorization header.
 		w.Header().Set("Vary", "Authorization")
 
-		// Create and set an anonymous user is better than not setting an user when authentication fails,
-		// cause then authen middleware can be chained before mux,
-		// whereas with not setting, authen needs to be prefixed with each needed handler.
+		// Create and set an anonymous user is better than not setting an user when auth token isn't found,
+		// cause then authenticate can be chained before mux,
+		// whereas with not setting, authenticate needs to be prefixed with each needed handler.
 		// Plus, no need to check if *User exists everytime getting it from req's context
 		// cause there'll always be either a real or an anonymous user.
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
-			r = a.contextSetUser(r, data.AnonymousUser)
+			r = a.setContextUser(r, data.AnonymousUser)
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -147,7 +147,7 @@ func (a *app) authenticate(next http.Handler) http.Handler {
 			}
 			return
 		}
-		r = a.contextSetUser(r, u)
+		r = a.setContextUser(r, u)
 
 		next.ServeHTTP(w, r)
 	})
@@ -156,9 +156,8 @@ func (a *app) authenticate(next http.Handler) http.Handler {
 // validateUserAuthenticated only calls next if the request's user is authenticated.
 func (a *app) validateUserAuthenticated(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := a.contextGetUser(r)
-		if u.IsAnonymous() {
-			a.unauthorized(w, r, "resource requires authentication")
+		if a.contextUser(r).IsAnonymous() {
+			a.unauthorized(w, r, "user needs to be authenticated")
 			return
 		}
 
@@ -169,9 +168,8 @@ func (a *app) validateUserAuthenticated(next http.HandlerFunc) http.HandlerFunc 
 // validateUserActivated only calls next if the request's user is authenticated and activated.
 func (a *app) validateUserActivated(next http.HandlerFunc) http.HandlerFunc {
 	f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := a.contextGetUser(r)
-		if !u.Activated {
-			a.forbidden(w, r, "resource requires user to be activated")
+		if !a.contextUser(r).Activated {
+			a.forbidden(w, r, "user needs to be activated")
 			return
 		}
 
@@ -181,20 +179,11 @@ func (a *app) validateUserActivated(next http.HandlerFunc) http.HandlerFunc {
 	return a.validateUserAuthenticated(f)
 }
 
-func (a *app) authorize(code string, next http.HandlerFunc) http.HandlerFunc {
+// authorize only calls next if the authenticated and activated user in request's context has perm.
+func (a *app) authorize(perm string, next http.HandlerFunc) http.HandlerFunc {
 	f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// ps, err := a.repo.Perms.GetAllForUser(a.contextGetUser(r).ID)
-		// if err != nil {
-		// 	a.serverErr(w, r, err)
-		// 	return
-		// }
-		// if !ps.Include(code) {
-		// 	a.forbidden(w, r, "user doesn't have permission to access this resource")
-		// 	return
-		// }
-
-		if err := a.repo.Users.HasPerm(a.contextGetUser(r).ID, code); err != nil {
-			if errors.Is(err, data.ErrUserNotHavePerm) {
+		if err := a.repo.Users.HasPerm(a.contextUser(r).ID, perm); err != nil {
+			if errors.Is(err, data.ErrNotHavePerm) {
 				a.forbidden(w, r, "user doesn't have permission to access this resource")
 			} else {
 				a.serverErr(w, r, err)

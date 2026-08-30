@@ -182,7 +182,7 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 	return u, err
 }
 
-var ErrUserNotHavePerm = errors.New("data: user doesn't have the permission")
+var ErrNotHavePerm = errors.New("data: user doesn't have the permission")
 
 // HasPerm returns nil if user with id has perm,
 // returns ErrUserNotHavePerm if user doesn't,
@@ -202,7 +202,7 @@ func (r *UserRepo) HasPerm(id int64, perm string) error {
 		return err
 	}
 	if !has {
-		return ErrUserNotHavePerm
+		return ErrNotHavePerm
 	}
 
 	return nil
