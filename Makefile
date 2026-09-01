@@ -2,7 +2,7 @@ include .envrc
 
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api/ -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD}
+	@go run ./cmd/api/ -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhot:9001"
 
 .PHONY: help
 help:

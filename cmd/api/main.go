@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,6 +61,9 @@ type conf struct {
 		password string
 		sender   string
 	}
+	cors struct {
+		trustedOrigins []string
+	}
 }
 
 // app has dependencies for this service.
@@ -76,7 +80,7 @@ func newApp() (*app, error) {
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
 
-	flag.IntVar(&a.port, "port", 9000, "Service's HTTP port")
+	flag.IntVar(&a.port, "port", 4000, "Service's HTTP port")
 	flag.StringVar(&a.env, "env", "development", "Environment (development|staging|production)")
 
 	flag.StringVar(&a.db.dsn, "db-dsn", "", "PostgreSQL data source name")
@@ -93,6 +97,15 @@ func newApp() (*app, error) {
 	flag.Float64Var(&a.rate.rps, "rate-rps", 2, "Rate limit's max requests per second")
 	flag.IntVar(&a.rate.burst, "rate-burst", 4, "Rate limit's max burst of requests")
 	flag.BoolVar(&a.rate.enabled, "rate-enabled", true, "Enable rate limit")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(s string) error {
+		// Splits s into []string around each instance of consecutive white space characters.
+		// Result is "" if s only contains white space characters,
+		// like if the flag doesn't have a value or the value is only a chunk of white space charaters.
+		a.cors.trustedOrigins = strings.Fields(s)
+
+		return nil
+	})
 
 	flag.Parse()
 

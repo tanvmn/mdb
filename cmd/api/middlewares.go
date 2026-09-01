@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
 	"runtime/debug"
 	"slices"
@@ -40,7 +39,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				// this makes http.Server close the conn after responding.
-				w.Header().Set("Connection", "close")
+				w.Header().Add("Connection", "close")
 				a.serverErr(w, r, fmt.Errorf("%v", err))
 				debug.PrintStack()
 			}
@@ -102,7 +101,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 			a.tooManyRequests(w, r)
 			return
 		}
-		w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%v", math.Floor(c.lim.Tokens())))
+		// w.Header().Add("X-RateLimit-Remaining", fmt.Sprintf("%v", math.Floor(c.lim.Tokens())))
 		mu.Unlock()
 
 		next.ServeHTTP(w, r)
@@ -113,7 +112,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 func (a *app) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Inform clients who cache, that a response may vary based on a request's Authorization header.
-		w.Header().Set("Vary", "Authorization")
+		w.Header().Add("Vary", "Authorization")
 
 		// Create and set an anonymous user is better than not setting an user when auth token isn't found,
 		// cause then authenticate can be chained before mux,
@@ -195,4 +194,24 @@ func (a *app) authorize(perm string, next http.HandlerFunc) http.HandlerFunc {
 	})
 
 	return a.validateUserActivated(f)
+}
+
+func (a *app) enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Tell clients who cache, that the response is different based on value of the request's Origin header.
+		// Rule of thumb: if response is based on value of a request header,
+		// then include that request header (the name not the value) in the response's Vary header, even if the request didn't send that header.
+		w.Header().Add("Vary", "Origin")
+
+		if origin := r.Header.Get("Origin"); origin != "" {
+			for _, o := range a.cors.trustedOrigins {
+				if origin == o {
+					w.Header().Add("Access-Control-Allow-Origin", origin)
+					break
+				}
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

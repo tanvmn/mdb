@@ -11,7 +11,7 @@ import (
 
 // movie calls a.ok with wrap{"movie":m} as data.
 func (a *app) movie(w http.ResponseWriter, r *http.Request, m *data.Movie) {
-	w.Header().Set("Location", fmt.Sprintf("/v1/movies/%v", m.ID))
+	w.Header().Add("Location", fmt.Sprintf("/v1/movies/%v", m.ID))
 	a.ok(w, r, wrap{"movie": m})
 }
 

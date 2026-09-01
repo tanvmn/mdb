@@ -22,5 +22,5 @@ func (a *app) routes() http.Handler {
 
 	mux.HandleFunc("POST /v1/tokens/authentication", a.postAuthenTokenHandler)
 
-	return chain([]middleware{a.recoverPanic, a.rateLimit, a.authenticate, a.logRequest}, mux)
+	return chain([]middleware{a.recoverPanic, a.enableCORS, a.rateLimit, a.authenticate, a.logRequest}, mux)
 }

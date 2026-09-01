@@ -39,7 +39,7 @@ func (a *app) json(w http.ResponseWriter, r *http.Request, status int, data any)
 	}
 	bytes = append(bytes, '\n')
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if _, err = w.Write(bytes); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
