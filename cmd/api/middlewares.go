@@ -111,8 +111,12 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 // authenticate sets "Vary: Authorization", then authenticates based on "Authorization: Bearer <plaintext token>".
 func (a *app) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Inform clients who cache, that a response may vary based on a request's Authorization header.
-		w.Header().Add("Vary", "Authorization")
+		// Indicate that a response may vary based on a request's Authorization header, thus the response shouldn't be cached.
+		if len(w.Header()["Vary"]) != 0 {
+			w.Header()["Vary"][0] += ", Authorization"
+		} else {
+			w.Header()["Vary"] = append(w.Header()["Vary"], "Authorization")
+		}
 
 		// Create and set an anonymous user is better than not setting an user when auth token isn't found,
 		// cause then authenticate can be chained before mux,
@@ -198,10 +202,14 @@ func (a *app) authorize(perm string, next http.HandlerFunc) http.HandlerFunc {
 
 func (a *app) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Tell clients who cache, that the response is different based on value of the request's Origin header.
+		// Indicate that a response may vary based on a request's Authorization header, thus the response shouldn't be cached.
 		// Rule of thumb: if response is based on value of a request header,
 		// then include that request header (the name not the value) in the response's Vary header, even if the request didn't send that header.
-		w.Header().Add("Vary", "Origin")
+		if len(w.Header()["Vary"]) != 0 {
+			w.Header()["Vary"][0] += ", Origin"
+		} else {
+			w.Header()["Vary"] = append(w.Header()["Vary"], "Origin")
+		}
 
 		if origin := r.Header.Get("Origin"); origin != "" {
 			for _, o := range a.cors.trustedOrigins {
