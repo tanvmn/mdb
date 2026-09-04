@@ -112,11 +112,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 func (a *app) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Indicate that a response may vary based on a request's Authorization header, thus the response shouldn't be cached.
-		if len(w.Header()["Vary"]) != 0 {
-			w.Header()["Vary"][0] += ", Authorization"
-		} else {
-			w.Header()["Vary"] = append(w.Header()["Vary"], "Authorization")
-		}
+		w.Header().Add("Vary", "Authorization")
 
 		// Create and set an anonymous user is better than not setting an user when auth token isn't found,
 		// cause then authenticate can be chained before mux,
@@ -205,18 +201,20 @@ func (a *app) enableCORS(next http.Handler) http.Handler {
 		// Indicate that a response may vary based on a request's Authorization header, thus the response shouldn't be cached.
 		// Rule of thumb: if response is based on value of a request header,
 		// then include that request header (the name not the value) in the response's Vary header, even if the request didn't send that header.
-		if len(w.Header()["Vary"]) != 0 {
-			w.Header()["Vary"][0] += ", Origin"
-		} else {
-			w.Header()["Vary"] = append(w.Header()["Vary"], "Origin")
-		}
+		w.Header().Add("Vary", "Origin")
+		// Response'll be different if this header is included, cause then the request could be preflight.
+		w.Header().Add("Vary", "Access-Control-Request-Method")
 
-		if origin := r.Header.Get("Origin"); origin != "" {
-			for _, o := range a.cors.trustedOrigins {
-				if origin == o {
-					w.Header().Add("Access-Control-Allow-Origin", origin)
-					break
-				}
+		if origin := r.Header.Get("Origin"); slices.Contains(a.cors.trustedOrigins, origin) {
+			w.Header().Add("Access-Control-Allow-Origin", origin)
+			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+				// Try not to set these headers to * (wildcard), cause now only 77% of browsers support this, any don't will block.
+				// Authorization must be explicitly added like: Access-Control-Allow-Headers: Authorization, *.
+				// For preflights with credentials (cookie, basic auth), * will be interpreted like a literal string "*" instead of a wildcard.
+				w.Header().Add("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE") // no need to include CORS-safe methods
+				w.Header().Add("Access-Control-Allow-Headers", "Authorization, Content-Type") // no need to include CORS-safe or forbidden headers
+				w.WriteHeader(http.StatusOK)                                                  // prevent automatically setting 204 No Content
+				return
 			}
 		}
 

@@ -12,5 +12,6 @@ func (a *app) getHealthHandler(w http.ResponseWriter, r *http.Request) {
 			"version":     version,
 		},
 	}
+	// fmt.Println(r.Header.Get("H"))
 	a.ok(w, r, health)
 }

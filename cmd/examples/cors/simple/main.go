@@ -17,7 +17,12 @@ const html = `
 	<div id="output"></div>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
-			fetch("http://localhost:4000/v1/health").then(
+			fetch("http://localhost:4000/v1/health", {
+				// headers: {
+				// 	"H": "V",
+				// },
+				// credentials: 'include',
+			}).then(
 				function (response) {
 					response.text().then(function (text) {
 						document.getElementById("output").innerHTML = text;
