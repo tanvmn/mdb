@@ -198,19 +198,20 @@ func (a *app) authorize(perm string, next http.HandlerFunc) http.HandlerFunc {
 
 func (a *app) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Indicate that a response may vary based on a request's Authorization header, thus the response shouldn't be cached.
-		// Rule of thumb: if response is based on value of a request header,
+		// Indicate that a response's content may vary based on a request's Authorization header, thus the response shouldn't be cached.
+		// Rule of thumb: if response's content is based on value of a request header,
 		// then include that request header (the name not the value) in the response's Vary header, even if the request didn't send that header.
 		w.Header().Add("Vary", "Origin")
-		// Response'll be different if this header is included, cause then the request could be preflight.
+		// Response'll be different if the request includes this header, cause then the request could be preflight.
 		w.Header().Add("Vary", "Access-Control-Request-Method")
 
 		if origin := r.Header.Get("Origin"); slices.Contains(a.cors.trustedOrigins, origin) {
 			w.Header().Add("Access-Control-Allow-Origin", origin)
 			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 				// Try not to set these headers to * (wildcard), cause now only 77% of browsers support this, any don't will block.
-				// Authorization must be explicitly added like: Access-Control-Allow-Headers: Authorization, *.
-				// For preflights with credentials (cookie, basic auth), * will be interpreted like a literal string "*" instead of a wildcard.
+				// Authorization must be explicitly added like: "Access-Control-Allow-Headers: Authorization, *".
+				// For preflights with credentials (cookie, basic auth), browsers will interpret "*" as a literal string instead of a wildcard,
+				// so using wildcard won't work.
 				w.Header().Add("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE") // no need to include CORS-safe methods
 				w.Header().Add("Access-Control-Allow-Headers", "Authorization, Content-Type") // no need to include CORS-safe or forbidden headers
 				w.WriteHeader(http.StatusOK)                                                  // prevent automatically setting 204 No Content
