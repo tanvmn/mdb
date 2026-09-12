@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/tanvmn/mdb/internal/data"
@@ -21,6 +22,8 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /v1/users/activated", a.putUserActivatedHandler)
 
 	mux.HandleFunc("POST /v1/tokens/authentication", a.postAuthenTokenHandler)
+
+	mux.Handle("GET /debug/vars", expvar.Handler())
 
 	return chain([]middleware{a.recoverPanic, a.enableCORS, a.rateLimit, a.authenticate, a.logRequest}, mux)
 }

@@ -99,9 +99,6 @@ func newApp() (*app, error) {
 	flag.BoolVar(&a.rate.enabled, "rate-enabled", true, "Enable rate limit")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(s string) error {
-		// Splits s into []string around each instance of consecutive white space characters.
-		// Result is "" if s only contains white space characters,
-		// like if the flag doesn't have a value or the value is only a chunk of white space charaters.
 		a.cors.trustedOrigins = strings.Fields(s)
 
 		return nil
@@ -118,7 +115,7 @@ func newApp() (*app, error) {
 	return a, nil
 }
 
-// openDB establishes a connection pool and pings db.
+// openDB establishes a connection pool to a database and pings it.
 func openDB(c *conf) (*sql.DB, error) {
 	db, err := sql.Open("postgres", c.db.dsn)
 	if err != nil {

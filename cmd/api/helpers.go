@@ -160,11 +160,6 @@ func (a *app) do(f func()) {
 	f()
 }
 
-// godo starts a new goroutine to: defer recovering potential panic, then call f().
-func (a *app) godo(f func()) {
-	go a.do(f)
-}
-
 // wgo increments a.wg by 1, then starts a new goroutine to: defer a.wg.Done(), then calls a.do(f).
 func (a *app) wgo(f func()) {
 	a.wg.Go(func() { a.do(f) })

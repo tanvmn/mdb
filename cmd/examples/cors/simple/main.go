@@ -23,7 +23,7 @@ const html = `
 				// },
 				// credentials: 'include',
 			}).then(
-				function (response) {
+				function(response) {
 					response.text().then(function (text) {
 						document.getElementById("output").innerHTML = text;
 					});

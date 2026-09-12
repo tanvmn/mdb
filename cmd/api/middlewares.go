@@ -51,7 +51,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 
 func (a *app) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI(), "userID", a.contextUser(r).ID)
+		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI())
 
 		next.ServeHTTP(w, r)
 	})
@@ -73,7 +73,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 	clients := make(map[string]*client)
 
 	// Every minute, delete any client that hasn't visit for more than 3min.
-	a.godo(func() {
+	go a.do(func() {
 		for {
 			time.Sleep(time.Minute)
 			mu.Lock()
@@ -198,7 +198,6 @@ func (a *app) authorize(perm string, next http.HandlerFunc) http.HandlerFunc {
 
 func (a *app) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Indicate that a response's content may vary based on a request's Authorization header, thus the response shouldn't be cached.
 		// Rule of thumb: if response's content is based on value of a request header,
 		// then include that request header (the name not the value) in the response's Vary header, even if the request didn't send that header.
 		w.Header().Add("Vary", "Origin")
@@ -210,7 +209,7 @@ func (a *app) enableCORS(next http.Handler) http.Handler {
 			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 				// Try not to set these headers to * (wildcard), cause now only 77% of browsers support this, any don't will block.
 				// Authorization must be explicitly added like: "Access-Control-Allow-Headers: Authorization, *".
-				// For preflights with credentials (cookie, basic auth), browsers will interpret "*" as a literal string instead of a wildcard,
+				// For preflights with credentials (cookie, basic auth), browsers will interpret "*" in the responses as a literal string instead of a wildcard,
 				// so using wildcard won't work.
 				w.Header().Add("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE") // no need to include CORS-safe methods
 				w.Header().Add("Access-Control-Allow-Headers", "Authorization, Content-Type") // no need to include CORS-safe or forbidden headers

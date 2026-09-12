@@ -19,6 +19,9 @@ const (
 var (
 	ErrDuplicateEmail     = errors.New("data: duplicate email")
 	ErrMismatchedPassword = errors.New("data: mismatched password")
+	ErrNotHavePerm        = errors.New("data: user doesn't have the permission")
+
+	AnonymousUser = &User{}
 )
 
 type password struct {
@@ -60,8 +63,6 @@ type User struct {
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
 }
-
-var AnonymousUser = &User{}
 
 func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
@@ -181,8 +182,6 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 
 	return u, err
 }
-
-var ErrNotHavePerm = errors.New("data: user doesn't have the permission")
 
 // HasPerm returns nil if user with id has perm,
 // returns ErrUserNotHavePerm if user doesn't,

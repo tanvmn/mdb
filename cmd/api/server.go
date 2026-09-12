@@ -33,7 +33,7 @@ func (a *app) serve() error {
 
 	shutdownErr := make(chan error)
 
-	a.godo(func() {
+	go a.do(func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT) // seems to block until receiving sig.
 
