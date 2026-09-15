@@ -72,7 +72,7 @@ func (a *app) rateLimit(next http.Handler) http.Handler {
 	var mu sync.Mutex
 	clients := make(map[string]*client)
 
-	// Every minute, delete any client that hasn't visit for more than 3min.
+	// Every minute, delete any client that hasn't visited for more than 3min.
 	go a.do(func() {
 		for {
 			time.Sleep(time.Minute)
