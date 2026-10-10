@@ -251,8 +251,12 @@ func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
 }
 
 func (mw *metricsResponseWriter) Write(data []byte) (int, error) {
-	mw.headerWritten = true // w.Write will either set 200 or preserve the result of w.WriteHeader()
-	return mw.w.Write(data)
+	n, err := mw.w.Write(data)
+	if err == nil {
+		mw.headerWritten = true // w.Write will either set 200 or preserve the result of w.WriteHeader()
+	}
+
+	return n, err
 }
 
 func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
