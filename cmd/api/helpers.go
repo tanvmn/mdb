@@ -30,7 +30,7 @@ func id(r *http.Request) (int64, error) {
 
 // json encodes data to JSON, set "Content-Type: application/json", writes status, then writes the encoded data to w.
 // If encoding fails, json calls a.serverErr.
-// If writing to w fails, json serves status 500 without a body.
+// If writing to w fails, json slogs and serves status 500 without a body.
 func (a *app) json(w http.ResponseWriter, r *http.Request, status int, data any) {
 	bytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -42,6 +42,7 @@ func (a *app) json(w http.ResponseWriter, r *http.Request, status int, data any)
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if _, err = w.Write(bytes); err != nil {
+		a.logErr(r, err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

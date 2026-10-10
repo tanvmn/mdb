@@ -88,10 +88,18 @@ type MovieRepo struct {
 	db *sql.DB
 }
 
-// get queries a record and assign that to m.
+// read queries a movie and reads that into m.
 // ErrRecordNotFound is returned when no record is found.
-func (r *MovieRepo) get(query string, args []any, m *Movie) error {
+func (r *MovieRepo) read(query string, args []any, m *Movie) error {
 	return queryRow(r.db, query, args, m.dest())
+}
+
+// ErrRecordNotFound is returned when no record is found.
+func (r *MovieRepo) get(query string, args []any) (*Movie, error) {
+	m := &Movie{}
+	err := r.read(query, args, m)
+
+	return m, err
 }
 
 func (r *MovieRepo) Add(m *Movie) error {
@@ -99,7 +107,7 @@ func (r *MovieRepo) Add(m *Movie) error {
 	// pq.Array adapts a Go value to a value that postgres understands.
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres)}
 
-	return r.get(q, args, m)
+	return r.read(q, args, m)
 }
 
 func (r *MovieRepo) Get(id int64) (*Movie, error) {
@@ -109,17 +117,15 @@ func (r *MovieRepo) Get(id int64) (*Movie, error) {
 
 	q := selectMovies + " where id=$1"
 	args := []any{id}
-	m := &Movie{}
-	err := r.get(q, args, m)
 
-	return m, err
+	return r.get(q, args)
 }
 
 func (r *MovieRepo) Set(m *Movie) error {
 	q := "update movies set title=$1, year=$2, runtime=$3, genres=$4, version=version+1 where version=$5 and id=$6 " + returningMovie
 	args := []any{m.Title, m.Year, m.Runtime, pq.Array(m.Genres), m.Version, m.ID}
 
-	if err := r.get(q, args, m); err != nil {
+	if err := r.read(q, args, m); err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
 			return ErrEditConflict
 		}

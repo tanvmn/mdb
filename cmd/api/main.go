@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"expvar"
 	"flag"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +30,22 @@ func main() {
 	defer db.Close()
 	a.repo = data.NewRepo(db)
 
+	configStats(db)
+
 	a.handle(a.serve())
+}
+
+func configStats(db *sql.DB) {
+	expvar.NewString("version").Set(version) // expvar.String is concurrency safe -> free to mutate at runtime.
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+	expvar.Publish("timestamp", expvar.Func(func() any {
+		return time.Now().Unix()
+	}))
 }
 
 // handle slogs then os.Exit(1) if err != nil.

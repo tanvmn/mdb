@@ -25,5 +25,5 @@ func (a *app) routes() http.Handler {
 
 	mux.Handle("GET /debug/vars", expvar.Handler())
 
-	return chain([]middleware{a.recoverPanic, a.enableCORS, a.rateLimit, a.authenticate, a.logRequest}, mux)
+	return chain([]middleware{metrics, a.recoverPanic, a.enableCORS, a.rateLimit, a.authenticate, a.logRequest}, mux)
 }

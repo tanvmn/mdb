@@ -109,8 +109,19 @@ type UserRepo struct {
 	db *sql.DB
 }
 
-func (r *UserRepo) get(query string, args []any, u *User) error {
+// read queries an user and reads that into u.
+// ErrRecordNotFound is returned if no user is found.
+func (r *UserRepo) read(query string, args []any, u *User) error {
 	return queryRow(r.db, query, args, u.dest())
+}
+
+// get queries an user.
+// ErrRecordNotFound is returned if no user is found.
+func (r *UserRepo) get(query string, args []any) (*User, error) {
+	u := &User{}
+	err := r.read(query, args, u)
+
+	return u, err
 }
 
 func emailIsDuplicate(err error) bool {
@@ -123,7 +134,7 @@ func (r *UserRepo) Add(u *User) error {
 	q := "insert into users (name, email, password_hash, activated) values ($1,$2,$3,$4) " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated}
 
-	if err := r.get(q, args, u); err != nil {
+	if err := r.read(q, args, u); err != nil {
 		if emailIsDuplicate(err) {
 			return ErrDuplicateEmail
 		}
@@ -136,17 +147,15 @@ func (r *UserRepo) Add(u *User) error {
 func (r *UserRepo) GetByEmail(email string) (*User, error) {
 	q := selectUsers + " where email=$1 "
 	args := []any{email}
-	u := &User{}
-	err := r.get(q, args, u)
 
-	return u, err
+	return r.get(q, args)
 }
 
 func (r *UserRepo) Set(u *User) error {
 	q := "update users set name=$1, email=$2, password_hash=$3, activated=$4, version=version+1 where version=$5 and id=$6 " + returningUser
 	args := []any{u.Name, u.Email, u.Password.hash, u.Activated, u.Version, u.ID}
 
-	if err := r.get(q, args, u); err != nil {
+	if err := r.read(q, args, u); err != nil {
 		switch {
 		case errors.Is(err, ErrRecordNotFound):
 			return ErrEditConflict
@@ -177,10 +186,8 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 	hash := sha256.Sum256([]byte(plaintext))
 	// note the [:], cause pq doesn't support converting Go array.
 	args := []any{hash[:], scope, time.Now()}
-	u := &User{}
-	err := r.get(q, args, u)
 
-	return u, err
+	return r.get(q, args)
 }
 
 // HasPerm returns nil if user with id has perm,
@@ -188,7 +195,7 @@ func (r *UserRepo) GetByToken(scope, plaintext string) (*User, error) {
 // else returns the error occured while computing.
 func (r *UserRepo) HasPerm(id int64, perm string) error {
 	q := `select exists (
-		select 1
+		select true
 		from users_permissions as up
 		inner join users as u on u.id = up.user_id
 		inner join permissions as p on p.id = up.permission_id
