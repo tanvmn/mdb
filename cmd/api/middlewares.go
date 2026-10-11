@@ -233,7 +233,7 @@ type metricsResponseWriter struct {
 func newMetricsResponseWriter(w http.ResponseWriter) *metricsResponseWriter {
 	return &metricsResponseWriter{
 		w:          w,
-		statusCode: 200,
+		statusCode: http.StatusOK, // in case no handlers call w.WriteHeader(), w.Write()
 	}
 }
 
@@ -242,8 +242,8 @@ func (mw *metricsResponseWriter) Header() http.Header {
 }
 
 func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
+	// this call isn't inside if to let w.WriteHeader() be.
 	mw.w.WriteHeader(statusCode)
-	// w.WriteHeader() is only effective in the 1st call.
 	if !mw.headerWritten {
 		mw.statusCode = statusCode
 		mw.headerWritten = true

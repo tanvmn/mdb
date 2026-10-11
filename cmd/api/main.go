@@ -40,20 +40,12 @@ func configStats(db *sql.DB) {
 	expvar.Publish("goroutines", expvar.Func(func() any {
 		return runtime.NumGoroutine()
 	}))
-	expvar.Publish("database", expvar.Func(func() any {
+	expvar.Publish("db", expvar.Func(func() any {
 		return db.Stats()
 	}))
-	expvar.Publish("timestamp", expvar.Func(func() any {
+	expvar.Publish("unixTimestamp", expvar.Func(func() any {
 		return time.Now().Unix()
 	}))
-}
-
-// handle slogs then os.Exit(1) if err != nil.
-func (a *app) handle(err error) {
-	if err != nil {
-		a.log.Error(err.Error())
-		os.Exit(1)
-	}
 }
 
 // conf has configurable settings of app.
@@ -92,6 +84,7 @@ type app struct {
 	wg   sync.WaitGroup
 }
 
+// newApp initializes and returns an app up to the point of error, where app already had a slog.
 func newApp() (*app, error) {
 	a := &app{
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
@@ -109,7 +102,7 @@ func newApp() (*app, error) {
 	flag.IntVar(&a.smtp.port, "smtp-port", 587, "SMTP server's port")
 	flag.StringVar(&a.smtp.username, "smtp-username", "", "SMTP client's login username")
 	flag.StringVar(&a.smtp.password, "smtp-password", "", "SMTP client's login password")
-	flag.StringVar(&a.smtp.sender, "smtp-sender", "mdb <no-reply@not.available.yet>", "SMTP sender")
+	flag.StringVar(&a.smtp.sender, "smtp-sender", "mdb <no-reply>", "SMTP sender")
 
 	flag.Float64Var(&a.rate.rps, "rate-rps", 2, "Rate limit's max requests per second")
 	flag.IntVar(&a.rate.burst, "rate-burst", 4, "Rate limit's max burst of requests")
@@ -125,11 +118,19 @@ func newApp() (*app, error) {
 
 	m, err := mailer.New(a.smtp.host, a.smtp.port, a.smtp.username, a.smtp.password, a.smtp.sender)
 	if err != nil {
-		return nil, err
+		return a, err
 	}
 	a.mail = m
 
 	return a, nil
+}
+
+// handle, if err != nil, slogs then os.Exit(1).
+func (a *app) handle(err error) {
+	if err != nil {
+		a.log.Error(err.Error())
+		os.Exit(1)
+	}
 }
 
 // openDB establishes a connection pool to a database and pings it.
