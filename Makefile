@@ -24,11 +24,11 @@ build/api:
 ## run/api: run cmd/api application.
 .PHONY: run/api
 run/api: build/api
-	@bin/api -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
+	@./bin/api -version=$${v:-false} -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
 ## run/linux_amd64/api: run cmd/api application binary for linux/amd64.
 .PHONY: run/linux_amd64/api
 run/linux_amd64/api: build/api
-	@bin/linux_amd64/api -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
+	@./bin/linux_amd64/api -version=$${v:-false} -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
 
 .PHONY: migrate/version, migrate/up, migrate/down, migrate/goto
 ## db/migrate/create name=$1: create a new pair of sequential db migration files.
