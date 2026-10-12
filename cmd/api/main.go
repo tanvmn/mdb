@@ -15,12 +15,12 @@ import (
 
 	"github.com/tanvmn/mdb/internal/data"
 	"github.com/tanvmn/mdb/internal/mailer"
+	"github.com/tanvmn/mdb/internal/vcs"
 
 	_ "github.com/lib/pq"
 )
 
-// version will later be generated at build time.
-const version = "1.0.0"
+var version = vcs.Version()
 
 func main() {
 	a, err := newApp()
