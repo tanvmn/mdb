@@ -13,8 +13,8 @@ const (
 	ScopeActivation     = "activation"
 	ScopeAuthentication = "authentication"
 
-	columnsOfTokensAsT = " t.hash, t.user_id, t.expiry, t.scope "
-	selectTokens       = "select " + columnsOfTokensAsT + " from tokens as t "
+	// columnsOfTokensAsT = " t.hash, t.user_id, t.expiry, t.scope "
+	// selectTokens       = "select " + columnsOfTokensAsT + " from tokens as t "
 )
 
 type Token struct {

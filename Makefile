@@ -15,10 +15,20 @@ help/run:
 confirm:
 	@echo -n 'Are you sure? [y/n] ' && read ans && [ $${ans:-n} = y ]
 
+## build/api: build cmd/api application.
+.PHONY: build/api
+build/api:
+	@go build -o=./bin/api -ldflags='-s' ./cmd/api
+	@GOOS=linux GOARCH=amd64 go build -o=./bin/linux_amd64/api -ldflags='-s' ./cmd/api
+
 ## run/api: run cmd/api application.
 .PHONY: run/api
-run/api:
-	@go run ./cmd/api/ -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
+run/api: build/api
+	@bin/api -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
+## run/linux_amd64/api: run cmd/api application binary for linux/amd64.
+.PHONY: run/linux_amd64/api
+run/linux_amd64/api: build/api
+	@bin/linux_amd64/api -db-dsn=${DB_DSN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
 
 .PHONY: migrate/version, migrate/up, migrate/down, migrate/goto
 ## db/migrate/create name=$1: create a new pair of sequential db migration files.
@@ -53,3 +63,20 @@ db/stop:
 ## psql: start psql.
 psql: db/start
 	@psql ${DB_DSN}
+
+
+.PHONY: tidy
+## tidy: tidy module dependencies and format all .go files.
+tidy:
+	go mod tidy
+	go mod verify
+	go mod vendor
+	go fmt ./...
+
+.PHONY: audit
+## audit: quality control.
+audit:
+	go mod tidy -diff
+	go vet ./...
+	go test -race -vet=off ./...
+	go tool staticcheck ./...
