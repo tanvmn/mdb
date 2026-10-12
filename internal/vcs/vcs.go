@@ -3,9 +3,9 @@ package vcs
 import "runtime/debug"
 
 func Version() string {
-	i, ok := debug.ReadBuildInfo()
+	bi, ok := debug.ReadBuildInfo()
 	if ok {
-		return i.Main.Version
+		return bi.Main.Version
 	}
 
 	return ""
