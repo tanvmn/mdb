@@ -27,22 +27,29 @@ db/migrate/create:
 ## db/migrate/force version=$1: force db's state to a version, usually to fix migration error.
 db/migrate/force:
 	@migrate -path=./migrations/ -database=${DB_DSN} force ${version} # syntax: migrate/force version=<version number>
+## db/migrate/goto version=$1: migrate up or down to a version.
 db/migrate/goto:
 	@migrate -path=./migrations/ -database=${DB_DSN} goto ${version}
+## db/migrate/up: migrate up to the highest version.
 db/migrate/up: confirm
 	@migrate -path=./migrations/ -database=${DB_DSN} up
+## db/migrate/down: migrate down to the state before migrating.
 db/migrate/down:
 	@migrate -path=./migrations/ -database=${DB_DSN} down
+## db/migrate/version: check migrate version.
 db/migrate/version:
 	@migrate -path=./migrations/ -database=${DB_DSN} version
 
 .PHONY: db/start, db/stop
+## db/start: start db.
 db/start:
 	@sudo systemctl start postgresql.service
+## db/stop: stop db.
 db/stop:
 	@sudo systemctl stop postgresql.service
 	@sudo systemctl status postgresql.service
 
 .PHONY: psql
+## psql: start psql.
 psql: db/start
 	@psql ${DB_DSN}
