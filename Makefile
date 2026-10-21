@@ -105,3 +105,14 @@ audit:
 	go mod verify
 	go vet ./...
 	go tool staticcheck ./...
+
+# ==================================================================================== #
+# PRODUCTION
+# ==================================================================================== #
+
+prod_host_ip = '168.144.249.126'
+
+## prod/connect: connect to the production server
+.PHONY: prod/connect
+prod/connect:
+	ssh mdb@${prod_host_ip}
