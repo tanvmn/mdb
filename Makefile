@@ -48,12 +48,12 @@ db/migrate/create:
 ## db/migrate/force version=$1: force db's state to a version, usually to fix migration error.
 .PHONY: db/migrate/force
 db/migrate/force:
-	@migrate -path=./migrations/ -database=${DB_DSN} force ${version} # syntax: migrate/force version=<version number>
+	@migrate -path=./migrations/ -database=${DB_DSN} force ${v} # syntax: migrate/force version=<version number>
 
 ## db/migrate/goto version=$1: migrate up or down to a version.
 .PHONY: db/migrate/goto
 db/migrate/goto:
-	@migrate -path=./migrations/ -database=${DB_DSN} goto ${version}
+	@migrate -path=./migrations/ -database=${DB_DSN} goto ${v}
 
 ## db/migrate/up: migrate up to the highest version.
 .PHONY: db/migrate/up

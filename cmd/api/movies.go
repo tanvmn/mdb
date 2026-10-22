@@ -166,7 +166,7 @@ func (a *app) getMoviesHandler(w http.ResponseWriter, r *http.Request) {
 	f.Title = parseString(q, "title", "")
 	f.Genres = parseCSV(q, "genres", []string{})
 	f.Page = parseInt(q, "page", 1, v)
-	f.PageSize = parseInt(q, "page_size", 20, v)
+	f.PageSize = parseInt(q, "pageSize", 20, v)
 	f.Sort = parseString(q, "sort", "id")
 	f.SortList = []string{"id", "-id", "title", "-title", "year", "-year", "runtime", "-runtime"}
 	// at this point, service could serve 400 if !v.Valid(), but the next step is still using v to validate input,

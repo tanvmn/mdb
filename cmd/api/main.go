@@ -31,12 +31,12 @@ func main() {
 	defer db.Close()
 	a.repo = data.NewRepo(db)
 
-	configStats(db)
+	configureStats(db)
 
 	a.handle(a.serve())
 }
 
-func configStats(db *sql.DB) {
+func configureStats(db *sql.DB) {
 	expvar.NewString("version").Set(version) // expvar.String is concurrency safe -> free to mutate at runtime.
 	expvar.Publish("goroutines", expvar.Func(func() any {
 		return runtime.NumGoroutine()
@@ -103,7 +103,7 @@ func newApp() (*app, error) {
 	flag.IntVar(&a.smtp.port, "smtp-port", 587, "SMTP server's port")
 	flag.StringVar(&a.smtp.username, "smtp-username", "", "SMTP client's login username")
 	flag.StringVar(&a.smtp.password, "smtp-password", "", "SMTP client's login password")
-	flag.StringVar(&a.smtp.sender, "smtp-sender", "mdb <no-reply>", "SMTP sender")
+	flag.StringVar(&a.smtp.sender, "smtp-sender", "noreply@notexist.com", "SMTP sender")
 
 	flag.Float64Var(&a.rate.rps, "rate-rps", 2, "Rate limit's max requests per second")
 	flag.IntVar(&a.rate.burst, "rate-burst", 4, "Rate limit's max burst of requests")
