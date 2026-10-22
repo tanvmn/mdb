@@ -1,0 +1,12 @@
+# Contact this email when there're problems with TLS certificates.
+{
+	email ljnvmt@gmail.com
+}
+
+# Domain this vm.
+# Respond 403 for all uri /debug/*.
+# Forward requests to localhost:4000.
+demo-tvmn.work.gd {
+	respond /debug/* "Not Permitted" 403
+	reverse_proxy localhost:4000
+}
