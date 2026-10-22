@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"time"
@@ -79,7 +80,12 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// this means the request has been accepted and still being processed.
-	a.accepted(w, r, wrap{"user": u})
+	activation := map[string]any{
+		"jsonData": fmt.Sprintf(`{"token":"%v"}`, t.Plaintext),
+		"lifetime": fmt.Sprintf("%v day(s)", math.Floor(tokenLifetime.Hours()/24)),
+		"uri":      "PUT v1/users/activated",
+	}
+	a.accepted(w, r, wrap{"user": u, "activation": activation})
 }
 
 // user calls a.ok with wrap{"user": u} as data.
