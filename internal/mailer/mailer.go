@@ -28,7 +28,7 @@ func New(host string, port int, username, password, sender string) (*Mailer, err
 		mail.WithPort(port),                   // port client uses to connect to SMTP server.
 		mail.WithUsername(username),
 		mail.WithPassword(password),
-		mail.WithTimeout(10*time.Second), // client hangs up after this duration.
+		mail.WithTimeout(5*time.Second), // client hangs up after this duration.
 	)
 	if err != nil {
 		return nil, err
