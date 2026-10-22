@@ -116,3 +116,16 @@ prod_host_ip = '168.144.249.126'
 .PHONY: prod/connect
 prod/connect:
 	ssh mdb@${prod_host_ip}
+
+## prod/deploy/api: deploy api application to production.
+.PHONY: prod/deploy/api
+prod/deploy/api: build/api
+	rsync -P ./bin/linux_amd64/api mdb@${prod_host_ip}:~
+	rsync -rP --delete ./migrations mdb@${prod_host_ip}:~
+	rsync -P ./remote/prod/api.service mdb@${prod_host_ip}:~
+	ssh -t mdb@${prod_host_ip} '\
+		migrate -path ./migrations/ -database $$DB_DSN up \
+		&& sudo mv ~/api.service /etc/systemd/system/ \
+		&& sudo systemctl enable api \
+		&& sudo systemctl restart api \
+	'

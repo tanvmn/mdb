@@ -14,7 +14,7 @@ import (
 
 func (a *app) serve() error {
 	srv := &http.Server{
-		Addr:         fmt.Sprintf("localhost:%v", a.port),
+		Addr:         fmt.Sprintf(":%v", a.port),
 		Handler:      a.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
@@ -48,11 +48,11 @@ func (a *app) serve() error {
 
 	if err := srv.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
-			return err
+			return fmt.Errorf("*http.Server.ListenAndServe: %w", err)
 		}
 	}
 	if err := <-shutdownErr; err != nil {
-		return err
+		return fmt.Errorf("*http.Server.Shutdown: %w", err)
 	}
 
 	a.log.Info("waiting for other goroutines", "addr", srv.Addr)

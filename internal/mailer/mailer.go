@@ -28,7 +28,7 @@ func New(host string, port int, username, password, sender string) (*Mailer, err
 		mail.WithPort(port),                   // port client uses to connect to SMTP server.
 		mail.WithUsername(username),
 		mail.WithPassword(password),
-		mail.WithTimeout(5*time.Second), // client hangs up after this duration.
+		mail.WithTimeout(10*time.Second), // client hangs up after this duration.
 	)
 	if err != nil {
 		return nil, err
@@ -78,9 +78,10 @@ func (m *Mailer) Send(recipient, templateFile string, data any) error {
 	msg.SetBodyString(mail.TypeTextPlain, plainBody.String())      // set the content of the email's body; this case, content is plain text.
 	msg.AddAlternativeString(mail.TypeTextHTML, htmlBody.String()) // set the content of the email's alternative body; this case, content is html.
 
-	for i := range 3 {
+	const retry = 10
+	for i := range retry {
 		if err = m.client.DialAndSend(msg); err != nil {
-			if i != 2 {
+			if i != retry-1 {
 				time.Sleep(time.Second)
 			}
 		}

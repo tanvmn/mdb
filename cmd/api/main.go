@@ -88,7 +88,10 @@ type app struct {
 // newApp initializes and returns an app up to the point of error, where app already had a slog.
 func newApp() (*app, error) {
 	a := &app{
-		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+			// AddSource: true,
+		})),
 	}
 
 	flag.IntVar(&a.port, "port", 4000, "Service's HTTP port")
@@ -126,7 +129,7 @@ func newApp() (*app, error) {
 
 	m, err := mailer.New(a.smtp.host, a.smtp.port, a.smtp.username, a.smtp.password, a.smtp.sender)
 	if err != nil {
-		return a, err
+		return a, fmt.Errorf("mailer.New: %w", err)
 	}
 	a.mail = m
 
@@ -145,7 +148,7 @@ func (a *app) handle(err error) {
 func openDB(c *conf) (*sql.DB, error) {
 	db, err := sql.Open("postgres", c.db.dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sql.Open: %v: %w", c.db.dsn, err)
 	}
 	db.SetMaxOpenConns(c.db.maxOpenConns)
 	db.SetMaxIdleConns(c.db.maxIdleConns)
@@ -155,7 +158,7 @@ func openDB(c *conf) (*sql.DB, error) {
 	defer cancel()
 	if err = db.PingContext(ctx); err != nil {
 		db.Close()
-		return nil, err
+		return nil, fmt.Errorf("*sql.DB.Ping: dsn=%v: %w", c.db.dsn, err)
 	}
 
 	return db, nil

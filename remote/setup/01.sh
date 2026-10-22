@@ -11,6 +11,8 @@ TIMEZONE=Asia/Ho_Chi_Minh
 
 USERNAME=mdb
 
+# API_LOCAL_PORT=4000
+
 read -p "Enter password for database mdb user: " DB_PASSWORD
 
 # Force all output to be presented in en_US for the duration of this script. This avoids
@@ -44,6 +46,7 @@ rsync --archive --chown=${USERNAME}:${USERNAME} /root/.ssh /home/${USERNAME}
 ufw allow 22
 ufw allow 80/tcp
 ufw allow 443/tcp
+# ufw allow ${API_LOCAL_PORT}/tcp
 ufw --force enable
 
 apt --yes install fail2ban
@@ -58,9 +61,12 @@ apt --yes install postgresql
 sudo -i -u postgres psql -c "create database mdb"
 sudo -i -u postgres psql -d mdb -c "create extension if not exists citext"
 sudo -i -u postgres psql -d mdb -c "create role mdb with login password '${DB_PASSWORD}'"
+sudo -i -u postgres psql -d mdb -c "alter database mdb owner to mdb"
 
 # Add a DSN to connect to db to the system-wide environment variables in /etc/environment.
-echo "DB_DSN='postgres://mdb:${DB_PASSWORD}@localhost/mdb" >> /etc/environment
+echo "DB_DSN=postgres://mdb:${DB_PASSWORD}@localhost/mdb" >> /etc/environment
+echo "SMTP_USERNAME=ljnvmt@gmail.com" >> /etc/environment
+echo "SMTP_PASSWORD='ruig tlcz djlz yesb'" >> /etc/environment
 
 # Install Caddy (see https://caddyserver.com/docs/install#debian-ubuntu-raspbian).
 apt install --yes debian-keyring debian-archive-keyring apt-transport-https curl
