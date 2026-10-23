@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"math"
 	"net/http"
 	"time"
 
@@ -35,7 +34,7 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	u := &data.User{
 		Name:      *i.Name,
 		Email:     *i.Email,
-		Activated: false,
+		Activated: true, // solution to cloud vm blocking smtp
 	}
 	if err := u.Password.Set(*i.Password); err != nil {
 		a.serverErr(w, r, err)
@@ -61,25 +60,25 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := a.repo.Tokens.New(u.ID, tokenLifetime, data.ScopeActivation)
-	if err != nil {
-		a.serverErr(w, r, err)
-		return
-	}
+	// t, err := a.repo.Tokens.New(u.ID, tokenLifetime, data.ScopeActivation)
+	// if err != nil {
+	// 	a.serverErr(w, r, err)
+	// 	return
+	// }
 
-	a.wgo(func() {
-		data := map[string]any{
-			"activationToken": t.Plaintext,
-			"userID":          u.ID,
-			"tokenLifetime":   math.Floor(tokenLifetime.Hours() / 24),
-		}
-		if err := a.mail.Send(u.Email, "user_welcome.tmpl.html", data); err != nil {
-			a.logErr(r, err)
-		}
-	})
+	// a.wgo(func() {
+	// 	data := map[string]any{
+	// 		"activationToken": t.Plaintext,
+	// 		"userID":          u.ID,
+	// 		"tokenLifetime":   math.Floor(tokenLifetime.Hours() / 24),
+	// 	}
+	// 	if err := a.mail.Send(u.Email, "user_welcome.tmpl.html", data); err != nil {
+	// 		a.logErr(r, err)
+	// 	}
+	// })
 
 	// this means the request has been accepted and still being processed.
-	a.accepted(w, r, wrap{"user": u, "message": "Service can only send a limited amount of emails daily. If you haven't received an email, try again the next day."})
+	a.accepted(w, r, wrap{"user": u})
 }
 
 // user calls a.ok with wrap{"user": u} as data.
