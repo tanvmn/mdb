@@ -5,8 +5,10 @@
 
 # Domain this vm.
 # Respond 403 for all uri /debug/*.
+# Respond 503 for /v1/users/activated cause of sending email problem.
 # Forward requests to localhost:4000.
 demo-tvmn.work.gd {
 	respond /debug/* "Not Permitted" 403
+	respond /v1/users/activated "Service Unavailable" 503
 	reverse_proxy localhost:4000
 }
