@@ -79,7 +79,7 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// this means the request has been accepted and still being processed.
-	a.accepted(w, r, wrap{"user": u})
+	a.accepted(w, r, wrap{"user": u, "message": "Service can only send a limited amount of emails daily. If you haven't received an email, try again the next day."})
 }
 
 // user calls a.ok with wrap{"user": u} as data.
