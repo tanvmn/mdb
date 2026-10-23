@@ -1,0 +1,369 @@
+// Package mailtrap is the official Go client library for the Mailtrap email
+// delivery platform: transactional and bulk sending, the email sandbox
+// (testing), and email marketing.
+//
+// Construct a client with an API token and optional functional options:
+//
+//	client, err := mailtrap.NewClient("your-api-token")
+//	if err != nil {
+//		// handle error
+//	}
+package mailtrap
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/mailtrap/mailtrap-go/internal/transport"
+)
+
+// Host identifies one of Mailtrap's API hosts. Each request targets a specific
+// host; values can be overridden (e.g. for tests) with WithBaseURL.
+type Host int
+
+const (
+	// HostGeneral is the account/sandbox management API (https://mailtrap.io).
+	HostGeneral Host = iota
+	// HostSend is the transactional sending API (https://send.api.mailtrap.io).
+	HostSend
+	// HostBulk is the bulk sending API (https://bulk.api.mailtrap.io).
+	HostBulk
+	// HostSandbox is the sandbox (testing) sending API (https://sandbox.api.mailtrap.io).
+	HostSandbox
+)
+
+var defaultBaseURLs = map[Host]string{
+	HostGeneral: "https://mailtrap.io",
+	HostSend:    "https://send.api.mailtrap.io",
+	HostBulk:    "https://bulk.api.mailtrap.io",
+	HostSandbox: "https://sandbox.api.mailtrap.io",
+}
+
+// Client manages communication with the Mailtrap API.
+type Client struct {
+	httpClient *http.Client
+	baseURLs   map[Host]string
+	userAgent  string
+
+	// Sending configuration. sandbox and bulk are mutually exclusive; sandbox
+	// sends require sandboxID.
+	sandbox   bool
+	bulk      bool
+	sandboxID int64
+
+	// organizationID scopes SubAccounts operations; set via WithOrganizationID.
+	organizationID int64
+
+	// Projects manages sandbox projects.
+	Projects *ProjectsService
+	// Sandboxes manages sandboxes (testing inboxes) and their actions.
+	Sandboxes *SandboxesService
+	// SandboxMessages manages messages captured by a sandbox.
+	SandboxMessages *SandboxMessagesService
+	// SandboxAttachments reads attachments of sandbox messages.
+	SandboxAttachments *SandboxAttachmentsService
+
+	// SendingDomains manages sending domains and their compliance settings.
+	SendingDomains *SendingDomainsService
+	// Suppressions manages the account's do-not-send list.
+	Suppressions *SuppressionsService
+	// Stats reads aggregated email sending statistics.
+	Stats *StatsService
+	// EmailLogs reads the account's email logs and delivery events.
+	EmailLogs *EmailLogsService
+	// Webhooks manages account webhooks.
+	Webhooks *WebhooksService
+	// EmailTemplates manages the account's email templates. For the paginated
+	// /api/templates endpoints, see Templates.
+	EmailTemplates *EmailTemplatesService
+	// Templates manages the account's email templates with page-token
+	// pagination. The endpoints are experimental: their request and response
+	// shapes may change before general availability.
+	Templates *TemplatesService
+
+	// Accounts lists the accounts the token can access.
+	Accounts *AccountsService
+	// AccountAccesses lists and removes user, invite, and token accesses.
+	AccountAccesses *AccountAccessesService
+	// Permissions lists account resources and bulk-updates access permissions.
+	Permissions *PermissionsService
+	// APITokens manages the account's API tokens.
+	APITokens *APITokensService
+	// Billing reads current billing-cycle usage.
+	Billing *BillingService
+	// SubAccounts lists and creates sub-accounts within an organization.
+	SubAccounts *SubAccountsService
+
+	// Contacts manages email marketing contacts.
+	Contacts *ContactsService
+	// ContactEvents records custom events for contacts.
+	ContactEvents *ContactEventsService
+	// ContactLists manages contact lists.
+	ContactLists *ContactListsService
+	// ContactFields manages custom contact fields.
+	ContactFields *ContactFieldsService
+	// ContactImports bulk-imports contacts via asynchronous jobs.
+	ContactImports *ContactImportsService
+	// ContactExports exports contacts via asynchronous jobs.
+	ContactExports *ContactExportsService
+
+	// EmailCampaigns manages email marketing campaigns and their statistics.
+	EmailCampaigns *EmailCampaignsService
+}
+
+// Ptr returns a pointer to v, for setting optional pointer request fields such
+// as UpdateDomainRequest.OpenTrackingEnabled: mailtrap.Ptr(false).
+func Ptr[T any](v T) *T { return &v }
+
+// Option configures a Client in NewClient.
+type Option func(*Client) error
+
+// NewClient returns a Mailtrap API client authenticated with the given token.
+// The token is required; everything else is set through options.
+func NewClient(token string, opts ...Option) (*Client, error) {
+	if token == "" {
+		return nil, errors.New("mailtrap: API token is required")
+	}
+
+	c := &Client{
+		baseURLs:  cloneBaseURLs(),
+		userAgent: transport.UserAgent(),
+	}
+
+	for _, opt := range opts {
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := c.validateSendConfig(); err != nil {
+		return nil, err
+	}
+
+	// Wrap the HTTP client's transport so every request carries auth + UA,
+	// without mutating a client the caller may have passed in.
+	hc := &http.Client{}
+	if c.httpClient != nil {
+		*hc = *c.httpClient
+	}
+	hc.Transport = &transport.AuthTransport{
+		Token:     token,
+		UserAgent: c.userAgent,
+		Base:      hc.Transport,
+	}
+	c.httpClient = hc
+
+	c.Projects = &ProjectsService{client: c}
+	c.Sandboxes = &SandboxesService{client: c}
+	c.SandboxMessages = &SandboxMessagesService{client: c}
+	c.SandboxAttachments = &SandboxAttachmentsService{client: c}
+	c.SendingDomains = &SendingDomainsService{client: c}
+	c.Suppressions = &SuppressionsService{client: c}
+	c.Stats = &StatsService{client: c}
+	c.EmailLogs = &EmailLogsService{client: c}
+	c.Webhooks = &WebhooksService{client: c}
+	c.EmailTemplates = &EmailTemplatesService{client: c}
+	c.Templates = &TemplatesService{client: c}
+	c.Accounts = &AccountsService{client: c}
+	c.AccountAccesses = &AccountAccessesService{client: c}
+	c.Permissions = &PermissionsService{client: c}
+	c.APITokens = &APITokensService{client: c}
+	c.Billing = &BillingService{client: c}
+	c.SubAccounts = &SubAccountsService{client: c}
+	c.Contacts = &ContactsService{client: c}
+	c.ContactEvents = &ContactEventsService{client: c}
+	c.ContactLists = &ContactListsService{client: c}
+	c.ContactFields = &ContactFieldsService{client: c}
+	c.ContactImports = &ContactImportsService{client: c}
+	c.ContactExports = &ContactExportsService{client: c}
+	c.EmailCampaigns = &EmailCampaignsService{client: c}
+
+	return c, nil
+}
+
+// validateSendConfig enforces the two real send-mode invariants. A stray
+// sandboxID outside sandbox mode is ignored, so callers can toggle WithSandbox
+// from configuration without also clearing the ID.
+func (c *Client) validateSendConfig() error {
+	switch {
+	case c.bulk && c.sandbox:
+		return errors.New("mailtrap: bulk and sandbox modes are mutually exclusive")
+	case c.sandbox && c.sandboxID == 0:
+		return errors.New("mailtrap: WithSandboxID is required in sandbox mode")
+	default:
+		return nil
+	}
+}
+
+func cloneBaseURLs() map[Host]string {
+	m := make(map[Host]string, len(defaultBaseURLs))
+	for h, u := range defaultBaseURLs {
+		m[h] = u
+	}
+	return m
+}
+
+// WithHTTPClient sets the underlying *http.Client. Its transport is wrapped to
+// inject authentication, so a custom transport is preserved as the base.
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) error {
+		if httpClient == nil {
+			return errors.New("mailtrap: HTTP client must not be nil")
+		}
+		c.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithUserAgent overrides the default User-Agent header.
+func WithUserAgent(userAgent string) Option {
+	return func(c *Client) error {
+		if userAgent == "" {
+			return errors.New("mailtrap: user agent must not be empty")
+		}
+		c.userAgent = userAgent
+		return nil
+	}
+}
+
+// WithSandbox routes Send/SendBatch to the sandbox host. Pair it with
+// WithSandboxID. Toggle it from configuration to switch environments without
+// changing call sites, e.g. WithSandbox(env != "production").
+func WithSandbox(enabled bool) Option {
+	return func(c *Client) error {
+		c.sandbox = enabled
+		return nil
+	}
+}
+
+// WithBulk routes Send/SendBatch to the bulk host. Mutually exclusive with
+// WithSandbox.
+func WithBulk(enabled bool) Option {
+	return func(c *Client) error {
+		c.bulk = enabled
+		return nil
+	}
+}
+
+// WithSandboxID sets the sandbox that Send/SendBatch deliver to. Required in
+// sandbox mode and ignored otherwise.
+func WithSandboxID(sandboxID int64) Option {
+	return func(c *Client) error {
+		if sandboxID <= 0 {
+			return fmt.Errorf("mailtrap: sandbox ID must be valid, got %d", sandboxID)
+		}
+		c.sandboxID = sandboxID
+		return nil
+	}
+}
+
+// WithOrganizationID sets the organization that SubAccounts operations target.
+// A token can access a single organization, so it is configured once here
+// rather than passed to every call. Required before using client.SubAccounts.
+func WithOrganizationID(organizationID int64) Option {
+	return func(c *Client) error {
+		if organizationID <= 0 {
+			return fmt.Errorf("mailtrap: organization ID must be valid, got %d", organizationID)
+		}
+		c.organizationID = organizationID
+		return nil
+	}
+}
+
+// WithBaseURL overrides the base URL for a host, primarily for testing against
+// an httptest server.
+func WithBaseURL(host Host, rawURL string) Option {
+	return func(c *Client) error {
+		u := strings.TrimRight(rawURL, "/")
+		if u == "" {
+			return errors.New("mailtrap: base URL must not be empty")
+		}
+		c.baseURLs[host] = u
+		return nil
+	}
+}
+
+// Pagination is page-token pagination metadata returned with a paginated list
+// response. PrevToken and NextToken are nil on the first and last page
+// respectively.
+type Pagination struct {
+	Token      int     `json:"token"`
+	PrevToken  *int    `json:"prev_token"`
+	NextToken  *int    `json:"next_token"`
+	FirstURL   string  `json:"first_url"`
+	PrevURL    *string `json:"prev_url"`
+	CurrentURL string  `json:"current_url"`
+	NextURL    *string `json:"next_url"`
+}
+
+// Response wraps the HTTP response with pagination metadata.
+type Response struct {
+	*http.Response
+
+	// NextPage is the next page number for paginated list endpoints, or 0 when
+	// there are no further pages.
+	NextPage int
+}
+
+// do sends a request to host and decodes a JSON body into out (which may be
+// nil). Non-2xx responses are mapped to typed errors (see errors.go).
+func (c *Client) do(ctx context.Context, host Host, method, path string, query url.Values, body, out any) (*Response, error) {
+	req, err := transport.BuildRequest(ctx, method, c.baseURLs[host], path, query, body)
+	if err != nil {
+		return nil, fmt.Errorf("mailtrap: %w", err)
+	}
+
+	httpResp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("mailtrap: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	data, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return &Response{Response: httpResp}, fmt.Errorf("mailtrap: read response: %w", err)
+	}
+
+	resp := &Response{Response: httpResp}
+	if httpResp.StatusCode >= http.StatusBadRequest {
+		return resp, parseError(httpResp, data)
+	}
+	if out != nil && len(data) > 0 {
+		if err := json.Unmarshal(data, out); err != nil {
+			return resp, fmt.Errorf("mailtrap: decode response: %w", err)
+		}
+	}
+	return resp, nil
+}
+
+// doRaw sends a GET to the general host and returns the undecoded response
+// body. Used by the sandbox message body getters, which return text or binary
+// rather than JSON.
+func (c *Client) doRaw(ctx context.Context, path string) ([]byte, *Response, error) {
+	req, err := transport.BuildRequest(ctx, http.MethodGet, c.baseURLs[HostGeneral], path, nil, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("mailtrap: %w", err)
+	}
+
+	httpResp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("mailtrap: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	data, err := io.ReadAll(httpResp.Body)
+	resp := &Response{Response: httpResp}
+	if err != nil {
+		return nil, resp, fmt.Errorf("mailtrap: read response: %w", err)
+	}
+	if httpResp.StatusCode >= http.StatusBadRequest {
+		return nil, resp, parseError(httpResp, data)
+	}
+	return data, resp, nil
+}

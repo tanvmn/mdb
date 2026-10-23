@@ -23,8 +23,11 @@ import (
 var version = vcs.Version()
 
 func main() {
-	a, err := newApp()
+	a := newApp()
+
+	m, err := mailer.New(a.mailtrap.apiToken, a.mailtrap.sender)
 	a.handle(err)
+	a.mail = m
 
 	db, err := openDB(&a.conf)
 	a.handle(err)
@@ -71,6 +74,10 @@ type conf struct {
 		password string
 		sender   string
 	}
+	mailtrap struct {
+		apiToken string
+		sender   string
+	}
 	cors struct {
 		trustedOrigins []string
 	}
@@ -86,11 +93,11 @@ type app struct {
 }
 
 // newApp initializes and returns an app up to the point of error, where app already had a slog.
-func newApp() (*app, error) {
+func newApp() *app {
 	a := &app{
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-			// AddSource: true,
+			Level:     slog.LevelDebug,
+			AddSource: true,
 		})),
 	}
 
@@ -107,6 +114,9 @@ func newApp() (*app, error) {
 	flag.StringVar(&a.smtp.username, "smtp-username", "", "SMTP client's login username")
 	flag.StringVar(&a.smtp.password, "smtp-password", "", "SMTP client's login password")
 	flag.StringVar(&a.smtp.sender, "smtp-sender", "noreply@notexist.com", "SMTP sender")
+
+	flag.StringVar(&a.mailtrap.apiToken, "mailtrap-apiToken", "", "Mailtrap API token")
+	flag.StringVar(&a.mailtrap.sender, "mailtrap-sender", "hello@demomailtrap.co", "Mailtrap sender")
 
 	flag.Float64Var(&a.rate.rps, "rate-rps", 2, "Rate limit's max requests per second")
 	flag.IntVar(&a.rate.burst, "rate-burst", 4, "Rate limit's max burst of requests")
@@ -127,13 +137,7 @@ func newApp() (*app, error) {
 		os.Exit(0)
 	}
 
-	m, err := mailer.New(a.smtp.host, a.smtp.port, a.smtp.username, a.smtp.password, a.smtp.sender)
-	if err != nil {
-		return a, fmt.Errorf("mailer.New: %w", err)
-	}
-	a.mail = m
-
-	return a, nil
+	return a
 }
 
 // handle, if err != nil, slogs then os.Exit(1).

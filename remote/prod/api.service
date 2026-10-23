@@ -20,7 +20,7 @@ User=mdb
 Group=mdb
 EnvironmentFile=/etc/environment
 WorkingDirectory=/home/mdb
-ExecStart=/home/mdb/api -port=4000 -db-dsn=${DB_DSN} -env=production -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
+ExecStart=/home/mdb/api -port=4000 -db-dsn=${DB_DSN} -env=production -mailtrap-apiToken=${MAILTRAP_APITOKEN} -smtp-username=${SMTP_USERNAME} -smtp-password=${SMTP_PASSWORD} -cors-trusted-origins="http://localhost:9000 http://localhost:9001"
 
 # Automatically restart the service after a 5-second wait if it exits with a non-zero
 # exit code. If it restarts more than 5 times in 600 seconds, then the rate limit we

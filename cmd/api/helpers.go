@@ -153,8 +153,8 @@ func parseInt(query url.Values, key string, defaultVal int, v *validator.Validat
 // do defers recovering a potential panic, then calls f().
 func (a *app) do(f func()) {
 	defer func() {
-		if err := recover(); err != nil {
-			a.log.Error(fmt.Sprintf("%v", err))
+		if x := recover(); x != nil {
+			a.log.Error(fmt.Sprintf("%v", x))
 		}
 	}()
 
