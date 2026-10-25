@@ -374,8 +374,8 @@ xargs -I % -P8 curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: B
   "message": "edit conflict occurred, try again"
 }
 ```
-- 3 of 8 requests, that causes data race, is responded with status 409 Conflict, \
-- 3 of 8 requests, that exceeds the client’s rate limit, is responded with status 429 Too Many Requests.
+- 3 of 8 requests, that caused data race, are responded with status 409 Conflict, \
+- 3 of 8 requests, that exceeded the client’s rate limit, are responded with status 429 Too Many Requests.
 
 \
 **Rate limiting:** \
@@ -423,7 +423,7 @@ xargs -I % -P8 curl 'https://demo-tvmn.work.gd/v1/health' -H "Authorization: Bea
   "message": "exceeded rate limit, retry later"
 }
 ```
-- 2 of 8 requests, that exceeds its client’s rate limit, is responded with status 429 Too Many Requests.
+- 2 of 8 requests, that exceeded its client’s rate limit, are responded with status 429 Too Many Requests.
 
 \
 Service actually limits a user’s access by the user's permission(s) (read, write) on movies, but for now all users have both permissions.
