@@ -423,10 +423,10 @@ xargs -I % -P8 curl 'https://demo-tvmn.work.gd/v1/health' -H "Authorization: Bea
   "message": "exceeded rate limit, retry later"
 }
 ```
-any request, that exceeds the client’s rate limit, is responded with status 429 Too Many Requests.
+any request, that exceeds its client’s rate limit, is responded with status 429 Too Many Requests.
 
 \
-Service actually limits user’s access by permission (read, write) on movies, but for now all users have both permission.
+Service actually limits user’s access by permission (read, write) on movies, but for now all users have both permissions.
 
 \
 Instructions to build this project will be added later.
