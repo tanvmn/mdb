@@ -26,7 +26,7 @@ curl  https://demo-tvmn.work.gd/v1/health
 {
   "environment": "production",
   "status": "available",
-  "version": "v1.0.1-0.20261023073407-d30e55f3c688+dirty"
+  "version": "v1.0.1-0.20261023125932-de1be54d6548"
 }
 ```
 
