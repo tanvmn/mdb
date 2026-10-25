@@ -1,8 +1,8 @@
 ### Introduction:
 This is a JSON REST service for movies information management.\
-Visit this URL to check service's health: https://demo-tvmn.work.gd/v1/health.
+Visit this URL to check the service's health: https://demo-tvmn.work.gd/v1/health.
 
-### Service’s REST API:
+### Service’s REST APIs:
 ```text
 GET /v1/health
 
@@ -31,7 +31,7 @@ curl  https://demo-tvmn.work.gd/v1/health
 ```
 
 \
-**Create an user:** (originally, new user won’t be activated, and an activation token will be sent via new user’s email, but right now, the cloud's vm is blocking any email communication via smtp):
+**Create new user:** (originally, new user won’t be activated, and an activation token will be sent via new user’s email, but right now, the cloud's vm is blocking any email communication via smtp):
 ```text
 curl  https://demo-tvmn.work.gd/v1/users --json '{"name":"John Smith","email":"<enter email>","password":"<enter password>"}'
 
