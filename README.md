@@ -103,7 +103,7 @@ curl 'https://demo-tvmn.work.gd/v1/movies?pageSize=2' -H "Authorization: Bearer 
 **Get movie by ID:**
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authentication token>"
-response:
+
 {
   "movie": {
     "id": 2,
@@ -124,7 +124,7 @@ response:
 **Full-text search movies by title:**
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies?title=toy' -H "Authorization: Bearer <authentication token>"
-response:
+
 {
   "metadata": {
     "currentPage": 1,
