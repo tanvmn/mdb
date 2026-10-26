@@ -53,7 +53,7 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 
 func (a *app) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		a.log.Info("request", "addr", r.RemoteAddr, "method", r.Method, "uri", r.URL.RequestURI())
+		a.log.Info("request", "addr", realip.FromRequest(r), "method", r.Method, "uri", r.URL.RequestURI())
 
 		next.ServeHTTP(w, r)
 	})

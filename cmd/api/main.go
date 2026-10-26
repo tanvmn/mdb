@@ -96,8 +96,8 @@ type app struct {
 func newApp() *app {
 	a := &app{
 		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
+			Level: slog.LevelDebug,
+			// AddSource: true,
 		})),
 	}
 

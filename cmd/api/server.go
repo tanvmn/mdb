@@ -14,7 +14,7 @@ import (
 
 func (a *app) serve() error {
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%v", a.port),
+		Addr:         fmt.Sprintf("localhost:%v", a.port),
 		Handler:      a.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
