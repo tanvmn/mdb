@@ -30,8 +30,7 @@ curl  https://demo-tvmn.work.gd/v1/health
 }
 ```
 
-\
-#### Create new user:
+\#### Create new user:
 originally, new user won’t be activated, and an activation token will be sent via new user’s email, but right now, the cloud's vm is blocking any email communication via smtp
 ```text
 curl  https://demo-tvmn.work.gd/v1/users --json '{"name":"John Smith","email":"<enter email>","password":"<enter password>"}'
