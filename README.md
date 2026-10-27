@@ -30,7 +30,6 @@ curl  https://demo-tvmn.work.gd/v1/health
 }
 ```
 
-
 #### Create new user:
 originally, new user won’t be activated, and an activation token will be sent via new user’s email, but right now, the cloud's vm is blocking any email communication via smtp
 ```text
@@ -58,7 +57,6 @@ curl 'https://demo-tvmn.work.gd/v1/tokens/authen' --json '{"email":"<enter email
 }
 ```
 
-\
 #### Get movies and limit page size to 2 records:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies?pageSize=2' -H "Authorization: Bearer <authentication token>"
@@ -99,7 +97,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies?pageSize=2' -H "Authorization: Bearer 
 }
 ```
 
-\
 #### Get movie by ID:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authentication token>"
@@ -120,7 +117,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authenti
 }
 ```
 
-\
 #### Full-text search movies by title:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies?title=toy' -H "Authorization: Bearer <authentication token>"
@@ -197,7 +193,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies?title=toy' -H "Authorization: Bearer <
 }
 ```
 
-\
 #### Full-text search movies by genres:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies?genres=action' -H "Authorization: Bearer <authentication token>"
@@ -238,7 +233,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies?genres=action' -H "Authorization: Bear
 }
 ```
 
-\
 #### Partially modify a movie:
 *Before modification:*
 ```text
@@ -280,7 +274,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authenti
 ```
 now "runtime":"96 mins" and "version":2.
 
-\
 #### Create a new movie:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies' -H "Authorization: Bearer <authentication token>" --json '{"title":"Moana","year":2016,"runtime":"107 mins","genres":["animation","family"]}'
@@ -300,7 +293,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies' -H "Authorization: Bearer <authentica
 }
 ```
 
-\
 #### Delete a movie by ID:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies/18' -H "Authorization: Bearer <authentication token>" -X DELETE
@@ -314,7 +306,6 @@ curl 'https://demo-tvmn.work.gd/v1/movies/18' -H "Authorization: Bearer <authent
 {"status":"404 Not Found", "message":"resource not found"}
 ```
 
-\
 #### Optimistic concurrency control to prevent data race:
 *8 **concurrent** requests:*
 ```text
@@ -376,7 +367,6 @@ xargs -I % -P8 curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: B
 - 3 of 8 requests, that caused data race, are responded with status 409 Conflict
 - 3 of 8 requests, that exceeded the client’s rate limit, are responded with status 429 Too Many Requests
 
-\
 #### Rate limiting:
 *8 **concurrent** requests:*
 ```text
