@@ -28,7 +28,7 @@ curl  https://demo-tvmn.work.gd/v1/health
   "status": "available",
   "version": "v1.0.1-0.20261023125932-de1be54d6548"
 }
-```
+```  
 
 #### Create new user:
 originally, new user won’t be activated, and an activation token will be sent via new user’s email, but right now, the cloud's vm is blocking any email communication via smtp
