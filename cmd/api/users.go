@@ -35,6 +35,7 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		Name:      *i.Name,
 		Email:     *i.Email,
 		Activated: true, // solution to cloud vm blocking smtp
+		// Activated: false,
 	}
 	if err := u.Password.Set(*i.Password); err != nil {
 		a.serverErr(w, r, err)
@@ -65,7 +66,7 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	// 	a.serverErr(w, r, err)
 	// 	return
 	// }
-
+	//
 	// a.wgo(func() {
 	// 	data := map[string]any{
 	// 		"activationToken": t.Plaintext,
@@ -78,6 +79,7 @@ func (a *app) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	// })
 
 	// this means the request has been accepted and still being processed.
+	// a.accepted(w, r, wrap{"message": "check the registered email to activate your account", "user": u})
 	a.accepted(w, r, wrap{"user": u})
 }
 

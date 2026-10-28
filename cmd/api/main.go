@@ -25,7 +25,7 @@ var version = vcs.Version()
 func main() {
 	a := newApp()
 
-	m, err := mailer.New(a.mailtrap.apiToken, a.mailtrap.sender)
+	m, err := mailer.New(a.smtp.host, a.smtp.port, a.smtp.username, a.smtp.password, a.smtp.sender)
 	a.handle(err)
 	a.mail = m
 
@@ -109,11 +109,11 @@ func newApp() *app {
 	flag.IntVar(&a.db.maxIdleConns, "db-max-idle-conns", 25, "Max idle connections to PostgreSQL")
 	flag.DurationVar(&a.db.connMaxIdleTime, "db-conn-max-idle-time", 15*time.Minute, "Max idle time of connections to PostgreSQL")
 
-	flag.StringVar(&a.smtp.host, "smtp-host", "smtp.gmail.com", "SMTP server's host")
-	flag.IntVar(&a.smtp.port, "smtp-port", 587, "SMTP server's port")
-	flag.StringVar(&a.smtp.username, "smtp-username", "", "SMTP client's login username")
+	flag.StringVar(&a.smtp.host, "smtp-host", "live.smtp.mailtrap.io", "SMTP server's host")
+	flag.IntVar(&a.smtp.port, "smtp-port", 2525, "SMTP server's port")
+	flag.StringVar(&a.smtp.username, "smtp-username", "smtp@mailtrap.io", "SMTP client's login username")
 	flag.StringVar(&a.smtp.password, "smtp-password", "", "SMTP client's login password")
-	flag.StringVar(&a.smtp.sender, "smtp-sender", "noreply@notexist.com", "SMTP sender")
+	flag.StringVar(&a.smtp.sender, "smtp-sender", "noreply@demo-tvmn.work.gd", "SMTP sender")
 
 	flag.StringVar(&a.mailtrap.apiToken, "mailtrap-apiToken", "", "Mailtrap API token")
 	flag.StringVar(&a.mailtrap.sender, "mailtrap-sender", "hello@demomailtrap.co", "Mailtrap sender")
