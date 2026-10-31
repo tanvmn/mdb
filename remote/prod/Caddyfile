@@ -12,6 +12,11 @@ demo-tvmn.work.gd {
 	respond /v1/users/activated "Service Unavailable" 503
 	reverse_proxy localhost:4000
 }
+
+# Attackers
 34.165.84.41 {
+	respond "Not Found" 404
+}
+34.155.137.112 {
 	respond "Not Found" 404
 }

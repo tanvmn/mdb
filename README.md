@@ -3,20 +3,18 @@ This is a JSON REST service for movies information management.\
 Visit this URL to check the service's health: https://demo-tvmn.work.gd/v1/health.
 
 ### Service’s REST APIs:
-```text
-GET /v1/health
+| Method | Pattern             | Description                                            |
+|--------|---------------------|--------------------------------------------------------|
+| GET    | /v1/health          | Check service's health                                 |
+| GET    | /v1/movies          | Get multiple movies                                    |
+| POST   | /v1/movies          | Add a movie                                            |
+| GET    | /v1/movies/{id}     | Get a movie by ID                                      |
+| PATCH  | /v1/movies/{id}     | Partially update a movie by ID                         |
+| DELETE | /v1/movies/{id}     | Delete a movie by ID                                   |
+| POST   | /v1/users           | Add a user                                             |
+| PUT    | /v1/users/activated | Activate a user // disabled due to sending email problems |
+| POST   | /v1/tokens/authen   | Create a new authentication token                      |
 
-GET /v1/movies
-POST /v1/movies
-GET /v1/movies/{id}
-PATCH /v1/movies/{id}
-DELETE /v1/movies/{id}
-
-POST /v1/users
-PUT /v1/users/activated *disabled due to cloud's vm blocking any SMTP communication*
-
-POST /v1/tokens/authen
-```
 ### Demo with cURL:
 
 #### Check the service’s health:
@@ -207,7 +205,7 @@ curl 'https://demo-tvmn.work.gd/v1/movies?title=toy' -H "Authorization: Bearer <
 
 #### Full-text search movies by genres:
 ```text
-curl 'https://demo-tvmn.work.gd/v1/movies?genres=action' -H "Authorization: Bearer <authentication token>"
+curl 'https://demo-tvmn.work.gd/v1/movies?genres=action,animation' -H "Authorization: Bearer <authentication token>"
 
 {
   "metadata": {
