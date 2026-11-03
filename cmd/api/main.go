@@ -6,6 +6,8 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"log/slog"
 	"os"
 	"runtime"
@@ -94,12 +96,7 @@ type app struct {
 
 // newApp initializes and returns an app up to the point of error, where app already had a slog.
 func newApp() *app {
-	a := &app{
-		log: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-			// AddSource: true,
-		})),
-	}
+	a := new(app)
 
 	flag.IntVar(&a.port, "port", 4000, "Service's HTTP port")
 	flag.StringVar(&a.env, "env", "development", "Environment (development|staging|production)")
@@ -131,6 +128,21 @@ func newApp() *app {
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
+
+	var w io.Writer
+	if a.env == "production" {
+		logf, err := os.Create("log.txt")
+		if err != nil {
+			log.Fatal(err)
+		}
+		w = logf
+	} else {
+		w = os.Stdout
+	}
+	a.log = slog.New(slog.NewTextHandler(
+		w,
+		&slog.HandlerOptions{Level: slog.LevelDebug},
+	))
 
 	if *displayVersion {
 		fmt.Printf("Version:\t%v\n", version)
