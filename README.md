@@ -125,7 +125,7 @@ curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authenti
 
 </br>
 
-#### Full-text search movies by genres:
+#### Full-text search movies:
 ```text
 curl 'https://demo-tvmn.work.gd/v1/movies?genres=action,animation&title=incredibles&page=1&pageSize=5' -H "Authorization: Bearer <authentication token>"
 
