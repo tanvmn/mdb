@@ -125,92 +125,14 @@ curl 'https://demo-tvmn.work.gd/v1/movies/2' -H "Authorization: Bearer <authenti
 
 </br>
 
-#### Full-text search movies by title:
-```text
-curl 'https://demo-tvmn.work.gd/v1/movies?title=toy' -H "Authorization: Bearer <authentication token>"
-
-{
-  "metadata": {
-    "currentPage": 1,
-    "pageSize": 20,
-    "lastPage": 1,
-    "totalRecords": 5
-  },
-  "movies": [
-    {
-      "id": 1,
-      "title": "Toy Story",
-      "year": 1995,
-      "runtime": "81 mins",
-      "genres": [
-        "animation",
-        "comedy",
-        "adventure"
-      ],
-      "version": 1
-    },
-    {
-      "id": 3,
-      "title": "Toy Story 2",
-      "year": 1999,
-      "runtime": "92 mins",
-      "genres": [
-        "animation",
-        "comedy",
-        "adventure"
-      ],
-      "version": 1
-    },
-    {
-      "id": 11,
-      "title": "Toy Story 3",
-      "year": 2010,
-      "runtime": "103 mins",
-      "genres": [
-        "animation",
-        "comedy",
-        "adventure"
-      ],
-      "version": 1
-    },
-    {
-      "id": 16,
-      "title": "Toy Story 4",
-      "year": 2019,
-      "runtime": "100 mins",
-      "genres": [
-        "animation",
-        "comedy",
-        "adventure"
-      ],
-      "version": 1
-    },
-    {
-      "id": 17,
-      "title": "Toy Story 5",
-      "year": 2026,
-      "runtime": "102 mins",
-      "genres": [
-        "animation",
-        "comedy",
-        "adventure"
-      ],
-      "version": 1
-    }
-  ]
-}
-```
-
-</br>
-
 #### Full-text search movies by genres:
 ```text
-curl 'https://demo-tvmn.work.gd/v1/movies?genres=action,animation' -H "Authorization: Bearer <authentication token>"
+curl 'https://demo-tvmn.work.gd/v1/movies?genres=action,animation&title=incredibles&page=1&pageSize=5' -H "Authorization: Bearer <authentication token>"
 
 {
   "metadata": {
     "currentPage": 1,
-    "pageSize": 20,
+    "pageSize": 5,
     "lastPage": 1,
     "totalRecords": 2
   },
